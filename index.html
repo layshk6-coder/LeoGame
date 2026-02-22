@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leo的游戏世界 🎮</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+        .container {
+            width: 800px;
+            max-width: 95vw;
+            text-align: center;
+            padding: 40px;
+        }
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px #00d4ff;
+            background: linear-gradient(90deg, #ff006e, #8338ec, #3a86ff, #06ffa5);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.8;
+            margin-bottom: 50px;
+        }
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        .game-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 30px;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+            cursor: pointer;
+            text-decoration: none;
+            color: white;
+            display: block;
+        }
+        .game-card:hover {
+            transform: translateY(-10px);
+            border-color: #00d4ff;
+            box-shadow: 0 20px 40px rgba(0,212,255,0.3);
+        }
+        .game-icon {
+            font-size: 4em;
+            margin-bottom: 20px;
+        }
+        .game-title {
+            font-size: 1.8em;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .game-desc {
+            font-size: 1em;
+            opacity: 0.8;
+            line-height: 1.6;
+        }
+        .game-tag {
+            display: inline-block;
+            padding: 5px 15px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-top: 15px;
+        }
+        .footer {
+            margin-top: 60px;
+            opacity: 0.6;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎮 Leo的游戏世界 🎮</h1>
+        <p class="subtitle">选择你想玩的游戏，开始冒险吧！</p>
+        
+        <div class="games-grid">
+            <a href="super-warrior/" class="game-card">
+                <div class="game-icon">⚔️</div>
+                <div class="game-title">超级战士</div>
+                <div class="game-desc">
+                    10种属性的策略对战游戏<br>
+                    AI对战 + 双人对战模式<br>
+                    升级系统，成为最强战士！
+                </div>
+                <span class="game-tag">策略对战</span>
+            </a>
+            
+            <a href="snake/" class="game-card">
+                <div class="game-icon">🐍</div>
+                <div class="game-title">贪吃蛇大冒险</div>
+                <div class="game-desc">
+                    经典贪吃蛇游戏<br>
+                    吃食物长大，不要撞墙<br>
+                    挑战最高分！
+                </div>
+                <span class="game-tag">经典休闲</span>
+            </a>
+        </div>
+        
+        <div class="footer">
+            <p>Made with ❤️ by Leo & 浣浣</p>
+            <p>更多游戏即将上线...</p>
+        </div>
+    </div>
+</body>
+</html>

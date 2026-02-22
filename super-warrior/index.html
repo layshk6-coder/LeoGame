@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>超级战士 - Super Warrior</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Microsoft YaHei', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+        }
+        .game-container {
+            width: 900px;
+            max-width: 95vw;
+            background: rgba(0,0,0,0.3);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 0 50px rgba(0,150,255,0.3);
+        }
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 20px #00d4ff;
+            background: linear-gradient(90deg, #ff006e, #8338ec, #3a86ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .menu {
+            text-align: center;
+            padding: 30px;
+        }
+        .btn {
+            display: inline-block;
+            margin: 10px;
+            padding: 15px 40px;
+            font-size: 1.2em;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background: linear-gradient(45deg, #ff006e, #8338ec);
+            color: white;
+        }
+        .btn-secondary {
+            background: linear-gradient(45deg, #3a86ff, #06ffa5);
+            color: white;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(255,255,255,0.3);
+        }
+        .battle-arena {
+            display: none;
+            padding: 20px;
+        }
+        .fighters {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .fighter {
+            width: 200px;
+            text-align: center;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            position: relative;
+        }
+        .fighter-avatar {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3em;
+            border: 4px solid;
+        }
+        .hp-bar {
+            width: 100%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444, #ff8844);
+            transition: width 0.5s;
+        }
+        .xp-bar {
+            width: 100%;
+            height: 8px;
+            background: #222;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffd700, #ffaa00);
+            transition: width 0.3s;
+        }
+        .vs {
+            font-size: 3em;
+            font-weight: bold;
+            color: #ff006e;
+            text-shadow: 0 0 20px #ff006e;
+        }
+        .battle-log {
+            height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.5);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+        .battle-log p {
+            margin: 5px 0;
+            padding: 5px;
+            border-radius: 5px;
+        }
+        .log-player { background: rgba(58,134,255,0.2); }
+        .log-enemy { background: rgba(255,0,110,0.2); }
+        .log-system { background: rgba(255,215,0,0.2); color: #ffd700; }
+        .controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        .skill-btn {
+            padding: 12px 5px;
+            border: 2px solid;
+            border-radius: 10px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.85em;
+        }
+        .skill-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+            filter: brightness(1.3);
+        }
+        .skill-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .type-fire { border-color: #ff4444; color: #ff6666; }
+        .type-electric { border-color: #ffd700; color: #ffec8b; }
+        .type-life { border-color: #00ff88; color: #66ffaa; }
+        .type-water { border-color: #4488ff; color: #66aaff; }
+        .type-fight { border-color: #ff8844; color: #ffaa66; }
+        .type-dark { border-color: #8844ff; color: #aa66ff; }
+        .type-poison { border-color: #aa44aa; color: #cc66cc; }
+        .type-steel { border-color: #888888; color: #aaaaaa; }
+        .type-ice { border-color: #88ffff; color: #aaffff; }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 10px 0;
+            font-size: 0.9em;
+        }
+        .stat-item {
+            background: rgba(0,0,0,0.3);
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        .level-badge {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(45deg, #ffd700, #ffaa00);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: #000;
+            font-size: 1.2em;
+            box-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+        .type-icon {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            margin-top: 5px;
+        }
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            border-radius: 5px;
+            color: white;
+            cursor: pointer;
+        }
+        .game-over {
+            display: none;
+            text-align: center;
+            padding: 50px;
+        }
+        .game-over h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        .win { color: #00ff88; text-shadow: 0 0 30px #00ff88; }
+        .lose { color: #ff4444; text-shadow: 0 0 30px #ff4444; }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+        .shake { animation: shake 0.5s; }
+        @keyframes damage {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); filter: brightness(2); }
+            100% { transform: scale(1); }
+        }
+        .damage { animation: damage 0.3s; }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <button class="back-btn" onclick="backToMenu()" style="display:none">← 返回</button>
+        
+        <h1>🔥 超级战士 🔥</h1>
+        
+        <!-- 主菜单 -->
+        <div class="menu" id="menu">
+            <p style="margin-bottom: 30px; opacity: 0.8;">选择你的战斗模式</p>
+            <button class="btn btn-primary" onclick="startGame('ai')">🤖 AI对战模式</button>
+            <button class="btn btn-secondary" onclick="startGame('pvp')">👥 双人对战模式</button>
+            <div style="margin-top: 40px; font-size: 0.9em; opacity: 0.7;">
+                <p>⚔️ 10种属性相生相克</p>
+                <p>📈 升级系统：2→5→20</p>
+                <p>🏆 成为最强战士！</p>
+            </div>
+        </div>
+        
+        <!-- 战斗场景 -->
+        <div class="battle-arena" id="battleArena">
+            <div class="fighters">
+                <div class="fighter" id="player1">
+                    <div class="level-badge" id="p1Level">1</div>
+                    <div class="fighter-avatar" id="p1Avatar">🔥</div>
+                    <h3 id="p1Name">战士1</h3>
+                    <span class="type-icon type-fire" id="p1Type">火属性</span>
+                    <div class="hp-bar"><div class="hp-fill" id="p1Hp" style="width:100%"></div></div>
+                    <p>HP: <span id="p1HpText">5030</span>/5030</p>
+                    <div class="xp-bar"><div class="xp-fill" id="p1Xp" style="width:0%"></div></div>
+                    <div class="stats">
+                        <span class="stat-item">⚔️ <span id="p1Atk">790</span></span>
+                        <span class="stat-item">🛡️ <span id="p1Def">5030</span></span>
+                    </div>
+                    <p style="font-size: 0.8em; margin-top: 5px;">击杀: <span id="p1Kills">0</span>/<span id="p1Need">2</span></p>
+                </div>
+                
+                <div class="vs">VS</div>
+                
+                <div class="fighter" id="player2">
+                    <div class="level-badge" id="p2Level">1</div>
+                    <div class="fighter-avatar" id="p2Avatar">💧</div>
+                    <h3 id="p2Name">战士2</h3>
+                    <span class="type-icon type-water" id="p2Type">水属性</span>
+                    <div class="hp-bar"><div class="hp-fill" id="p2Hp" style="width:100%"></div></div>
+                    <p>HP: <span id="p2HpText">5030</span>/5030</p>
+                    <div class="xp-bar"><div class="xp-fill" id="p2Xp" style="width:0%"></div></div>
+                    <div class="stats">
+                        <span class="stat-item">⚔️ <span id="p2Atk">790</span></span>
+                        <span class="stat-item">🛡️ <span id="p2Def">5030</span></span>
+                    </div>
+                    <p style="font-size: 0.8em; margin-top: 5px;">击杀: <span id="p2Kills">0</span>/<span id="p2Need">2</span></p>
+                </div>
+            </div>
+            
+            <div class="battle-log" id="battleLog">
+                <p class="log-system">⚔️ 战斗开始！选择技能攻击对手！</p>
+            </div>
+            
+            <div class="controls" id="controls">
+                <!-- 技能按钮由JS生成 -->
+            </div>
+        </div>
+        
+        <!-- 游戏结束 -->
+        <div class="game-over" id="gameOver">
+            <h2 id="resultText">胜利！</h2>
+            <p id="resultDetail"></p>
+            <button class="btn btn-primary" onclick="backToMenu()" style="margin-top: 30px;">返回菜单</button>
+        </div>
+    </div>
+
+    <script>
+// 游戏配置
+const TYPES = {
+    fire: { name: '火', icon: '🔥', color: '#ff4444', class: 'type-fire' },
+    electric: { name: '电', icon: '⚡', color: '#ffd700', class: 'type-electric' },
+    life: { name: '生命', icon: '🌿', color: '#00ff88', class: 'type-life' },
+    water: { name: '水', icon: '💧', color: '#4488ff', class: 'type-water' },
+    fight: { name: '斗', icon: '👊', color: '#ff8844', class: 'type-fight' },
+    dark: { name: '恶', icon: '😈', color: '#8844ff', class: 'type-dark' },
+    poison: { name: '毒', icon: '☠️', color: '#aa44aa', class: 'type-poison' },
+    steel: { name: '钢', icon: '⚙️', color: '#888888', class: 'type-steel' },
+    ice: { name: '冰', icon: '❄️', color: '#88ffff', class: 'type-ice' }
+};
+
+// 属性克制关系 (攻击方 -> 被克制方)
+const TYPE_CHART = {
+    fire: ['steel', 'ice'],
+    water: ['fire'],
+    electric: ['water', 'steel', 'ice'],
+    fight: ['electric', 'ice'],
+    life: ['fight', 'dark'],
+    dark: ['poison'],
+    poison: ['electric', 'ice'],
+    steel: [],
+    ice: ['water']
+};
+
+// 属性弱点 (被克制)
+const TYPE_WEAK = {
+    fire: ['water'],
+    water: ['electric', 'ice'],
+    electric: ['fight'],
+    fight: ['life'],
+    life: ['fire'],
+    dark: ['life'],
+    poison: ['dark'],
+    steel: ['fire', 'electric'],
+    ice: ['fire', 'electric', 'fight']
+};
+
+const TYPE_KEYS = Object.keys(TYPES);
+
+let gameMode = 'ai';
+let currentTurn = 1;
+let battleCount = 0;
+
+// 玩家数据
+let player1 = {
+    name: '玩家',
+    type: '',
+    level: 1,
+    hp: 5030,
+    maxHp: 5030,
+    atk: 790,
+    def: 5030,
+    kills: 0,
+    needKills: 2,
+    avatar: ''
+};
+
+let player2 = {
+    name: '对手',
+    type: '',
+    level: 1,
+    hp: 5030,
+    maxHp: 5030,
+    atk: 790,
+    def: 5030,
+    kills: 0,
+    needKills: 2,
+    avatar: ''
+};
+
+function getRandomType() {
+    return TYPE_KEYS[Math.floor(Math.random() * TYPE_KEYS.length)];
+}
+
+function startGame(mode) {
+    gameMode = mode;
+    battleCount++;
+    
+    // 重置玩家数据
+    player1 = {
+        name: mode === 'pvp' ? '玩家1' : '玩家',
+        type: getRandomType(),
+        level: 1,
+        hp: 5030,
+        maxHp: 5030,
+        atk: 790,
+        def: 5030,
+        kills: 0,
+        needKills: 2,
+        avatar: ''
+    };
+    
+    player2 = {
+        name: mode === 'pvp' ? '玩家2' : '电脑',
+        type: getRandomType(),
+        level: 1,
+        hp: 5030,
+        maxHp: 5030,
+        atk: 790,
+        def: 5030,
+        kills: 0,
+        needKills: 2,
+        avatar: ''
+    };
+    
+    // 确保属性不同
+    while (player2.type === player1.type) {
+        player2.type = getRandomType();
+    }
+    
+    currentTurn = 1;
+    
+    // 更新UI
+    document.getElementById('menu').style.display = 'none';
+    document.querySelector('.back-btn').style.display = 'block';
+    document.getElementById('battleArena').style.display = 'block';
+    document.getElementById('gameOver').style.display = 'none';
+    
+    updatePlayerUI(1);
+    updatePlayerUI(2);
+    generateSkillButtons();
+    
+    // 清空战斗日志
+    document.getElementById('battleLog').innerHTML = 
+        `<p class="log-system">⚔️ 第${battleCount}场战斗开始！</p>` +
+        `<p class="log-system">🔥 ${player1.name} 获得 ${TYPES[player1.type].name}属性！</p>` +
+        `<p class="log-system">💧 ${player2.name} 获得 ${TYPES[player2.type].name}属性！</p>`;
+    
+    if (gameMode === 'ai') {
+        logBattle('🤖 AI对战模式 - 选择技能击败对手！', 'system');
+    } else {
+        logBattle('👥 双人对战 - 玩家1先手！', 'system');
+    }
+}
+
+function updatePlayerUI(num) {
+    const player = num === 1 ? player1 : player2;
+    const typeInfo = TYPES[player.type];
+    
+    document.getElementById(`p${num}Avatar`).textContent = typeInfo.icon;
+    document.getElementById(`p${num}Avatar`).style.borderColor = typeInfo.color;
+    document.getElementById(`p${num}Name`).textContent = player.name;
+    document.getElementById(`p${num}Type`).textContent = typeInfo.name + '属性';
+    document.getElementById(`p${num}Type`).className = `type-icon ${typeInfo.class}`;
+    document.getElementById(`p${num}Level`).textContent = player.level;
+    document.getElementById(`p${num}Hp`).style.width = (player.hp / player.maxHp * 100) + '%';
+    document.getElementById(`p${num}HpText`).textContent = Math.floor(player.hp);
+    document.getElementById(`p${num}Atk`).textContent = Math.floor(player.atk);
+    document.getElementById(`p${num}Def`).textContent = Math.floor(player.def);
+    document.getElementById(`p${num}Kills`).textContent = player.kills;
+    document.getElementById(`p${num}Need`).textContent = player.needKills;
+    
+    // XP条
+    const xpPercent = (player.kills / player.needKills) * 100;
+    document.getElementById(`p${num}Xp`).style.width = xpPercent + '%';
+}
+
+function generateSkillButtons() {
+    const container = document.getElementById('controls');
+    container.innerHTML = '';
+    
+    TYPE_KEYS.forEach(type => {
+        const btn = document.createElement('button');
+        btn.className = `skill-btn ${TYPES[type].class}`;
+        btn.innerHTML = `${TYPES[type].icon} ${TYPES[type].name}`;
+        btn.onclick = () => useSkill(type);
+        container.appendChild(btn);
+    });
+}
+
+function useSkill(skillType) {
+    if (currentTurn === 2 && gameMode === 'ai') return;
+    
+    const attacker = currentTurn === 1 ? player1 : player2;
+    const defender = currentTurn === 1 ? player2 : player1;
+    
+    // 计算伤害
+    let damage = attacker.atk;
+    let multiplier = 1;
+    let effectText = '';
+    
+    // 属性克制
+    if (TYPE_CHART[skillType]?.includes(defender.type)) {
+        multiplier = 1.5;
+        effectText = '💥 效果拔群！';
+    } else if (TYPE_WEAK[skillType]?.includes(defender.type)) {
+        multiplier = 0.5;
+        effectText = '💨 效果不好...';
+    }
+    
+    // 同属性加成
+    if (skillType === attacker.type) {
+        multiplier *= 1.2;
+    }
+    
+    damage = Math.floor(damage * multiplier);
+    defender.hp -= damage;
+    
+    // 动画效果
+    const defenderEl = document.getElementById(currentTurn === 1 ? 'player2' : 'player1');
+    defenderEl.classList.add('damage');
+    setTimeout(() => defenderEl.classList.remove('damage'), 300);
+    
+    // 日志
+    const attackerName = attacker.name;
+    const skillName = TYPES[skillType].name;
+    logBattle(`${TYPES[skillType].icon} ${attackerName} 使用 ${skillName}技能！`, currentTurn === 1 ? 'player' : 'enemy');
+    logBattle(`💢 造成 ${damage} 点伤害！${effectText}`, 'system');
+    
+    updatePlayerUI(currentTurn === 1 ? 2 : 1);
+    
+    // 检查死亡
+    if (defender.hp <= 0) {
+        handleWin(currentTurn);
+        return;
+    }
+    
+    // 切换回合
+    currentTurn = currentTurn === 1 ? 2 : 1;
+    updateTurnIndicator();
+    
+    // AI回合
+    if (gameMode === 'ai' && currentTurn === 2) {
+        setTimeout(aiTurn, 1000);
+    }
+}
+
+function aiTurn() {
+    // AI策略：优先使用克制技能或同属性技能
+    let bestSkill = player2.type;
+    
+    // 查找克制技能
+    for (let skill of TYPE_KEYS) {
+        if (TYPE_CHART[skill]?.includes(player1.type)) {
+            bestSkill = skill;
+            break;
+        }
+    }
+    
+    useSkill(bestSkill);
+}
+
+function handleWin(winner) {
+    const loser = winner === 1 ? player2 : player1;
+    const winnerPlayer = winner === 1 ? player1 : player2;
+    
+    logBattle(`🏆 ${winnerPlayer.name} 击败了 ${loser.name}！`, 'system');
+    
+    // 升级检查
+    winnerPlayer.kills++;
+    if (winnerPlayer.kills >= winnerPlayer.needKills) {
+        winnerPlayer.level++;
+        winnerPlayer.kills = 0;
+        
+        // 计算下一级需求
+        if (winnerPlayer.level < 10) {
+            winnerPlayer.needKills = 2;
+        } else if (winnerPlayer.level < 20) {
+            winnerPlayer.needKills = 5;
+        } else {
+            winnerPlayer.needKills = 20;
+        }
+        
+        // 属性提升
+        winnerPlayer.maxHp += 500;
+        winnerPlayer.hp = winnerPlayer.maxHp;
+        winnerPlayer.atk += 100;
+        winnerPlayer.def += 300;
+        
+        logBattle(`🎉 ${winnerPlayer.name} 升到 ${winnerPlayer.level} 级！`, 'system');
+        logBattle(`📈 生命+500 攻击+100 防御+300`, 'system');
+        
+        updatePlayerUI(winner);
+    }
+    
+    // 显示结果
+    setTimeout(() => {
+        document.getElementById('battleArena').style.display = 'none';
+        document.getElementById('gameOver').style.display = 'block';
+        
+        const resultText = document.getElementById('resultText');
+        const resultDetail = document.getElementById('resultDetail');
+        
+        if (winner === 1 || (gameMode === 'pvp' && winner === 2)) {
+            resultText.textContent = '🎉 胜利！';
+            resultText.className = 'win';
+            resultDetail.innerHTML = `
+                <p>${winnerPlayer.name} 获得胜利！</p>
+                <p>当前等级: ${winnerPlayer.level}</p>
+                <p>击杀数: ${winnerPlayer.kills}/${winnerPlayer.needKills}</p>
+            `;
+        } else {
+            resultText.textContent = '💔 失败...';
+            resultText.className = 'lose';
+            resultDetail.innerHTML = `<p>${winnerPlayer.name} 太强了！</p><p>再试一次吧！</p>`;
+        }
+    }, 1500);
+}
+
+function updateTurnIndicator() {
+    const p1 = document.getElementById('player1');
+    const p2 = document.getElementById('player2');
+    
+    if (currentTurn === 1) {
+        p1.style.boxShadow = '0 0 30px #00ff88';
+        p2.style.boxShadow = 'none';
+    } else {
+        p1.style.boxShadow = 'none';
+        p2.style.boxShadow = '0 0 30px #ff4444';
+    }
+}
+
+function logBattle(text, type) {
+    const log = document.getElementById('battleLog');
+    const p = document.createElement('p');
+    p.className = `log-${type}`;
+    p.textContent = text;
+    log.appendChild(p);
+    log.scrollTop = log.scrollHeight;
+}
+
+function backToMenu() {
+    document.getElementById('menu').style.display = 'block';
+    document.querySelector('.back-btn').style.display = 'none';
+    document.getElementById('battleArena').style.display = 'none';
+    document.getElementById('gameOver').style.display = 'none';
+}
+    </script>
+</body>
+</html>
