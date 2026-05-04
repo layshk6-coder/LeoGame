@@ -149,11 +149,13 @@
         let player, monsters, projectiles, particles, hp, score, level, wave, monstersLeft, gameRunning, gameOver, attackCooldown, waveDelay;
 
         const MONSTER_TYPES = [
-            { emoji: '👾', name: '小怪兽', hp: 1, speed: 1, score: 10, size: 18 },
-            { emoji: '👹', name: '红恶魔', hp: 2, speed: 1.2, score: 20, size: 22 },
-            { emoji: '🐉', name: '恶龙', hp: 3, speed: 0.8, score: 30, size: 26 },
-            { emoji: '🦇', name: '蝙蝠', hp: 1, speed: 2, score: 15, size: 16 },
-            { emoji: '💀', name: '骷髅王', hp: 5, speed: 0.6, score: 50, size: 30 },
+            { emoji: '👾', name: '小怪兽', hp: 1, speed: 1, score: 10, size: 18, attack: 'none' },
+            { emoji: '👹', name: '红恶魔', hp: 2, speed: 1.2, score: 20, size: 22, attack: 'none' },
+            { emoji: '🐉', name: '恶龙', hp: 3, speed: 0.8, score: 30, size: 26, attack: 'none' },
+            { emoji: '🦇', name: '蝙蝠', hp: 1, speed: 2, score: 15, size: 16, attack: 'none' },
+            { emoji: '💀', name: '骷髅王', hp: 5, speed: 0.6, score: 50, size: 30, attack: 'none' },
+            { emoji: '🪱', name: '电击蚯蚓', hp: 2, speed: 0.7, score: 25, size: 20, attack: 'electric', atkRange: 120, atkCooldown: 3 },
+            { emoji: '🦔', name: '尖刺刺猬', hp: 4, speed: 0.5, score: 35, size: 24, attack: 'spike', spikeRange: 50, spikeDmg: 1 },
         ];
 
         function init() {
@@ -183,6 +185,8 @@
                 if (wave >= 5 && Math.random() < 0.2) typeIdx = 2;
                 if (wave >= 2 && Math.random() < 0.4) typeIdx = 3;
                 if (wave >= 7 && Math.random() < 0.15) typeIdx = 4;
+                if (wave >= 4 && Math.random() < 0.25) typeIdx = 5;  // 电击蚯蚓
+                if (wave >= 6 && Math.random() < 0.2) typeIdx = 6;  // 尖刺刺猬
 
                 const type = MONSTER_TYPES[typeIdx];
                 let mx, my;
@@ -202,7 +206,13 @@
                     emoji: type.emoji,
                     name: type.name,
                     hitTimer: 0,
-                    angle: 0
+                    angle: 0,
+                    attack: type.attack || 'none',
+                    atkRange: type.atkRange || 0,
+                    atkCooldown: type.atkCooldown || 999,
+                    atkTimer: Math.random() * 3,
+                    spikeRange: type.spikeRange || 0,
+                    spikeDmg: type.spikeDmg || 0,
                 });
             }
             monstersLeft = monsters.length;
@@ -316,7 +326,37 @@
                 }
                 if (m.hitTimer > 0) m.hitTimer -= dt;
 
-                // Damage player
+                // Special attacks
+                if (m.attack === 'electric') {
+                    m.atkTimer -= dt;
+                    if (m.atkTimer <= 0 && dist < m.atkRange * SCALE) {
+                        m.atkTimer = m.atkCooldown;
+                        // Fire electric bolt
+                        const boltAngle = Math.atan2(player.y - m.y, player.x - m.x);
+                        projectiles.push({
+                            x: m.x, y: m.y,
+                            vx: Math.cos(boltAngle) * 5 * SCALE,
+                            vy: Math.sin(boltAngle) * 5 * SCALE,
+                            life: 2,
+                            type: 'electric',
+                            damage: 1,
+                            size: 8 * SCALE
+                        });
+                    }
+                }
+                if (m.attack === 'spike') {
+                    // Spikes damage player if too close
+                    if (dist < m.size + m.spikeRange * SCALE && player.invincible <= 0) {
+                        hp -= m.spikeDmg;
+                        player.invincible = 1.5;
+                        spawnParticles(player.x, player.y, '#ff8800', 8);
+                        canvas.classList.add('shake');
+                        setTimeout(() => canvas.classList.remove('shake'), 200);
+                        updateHUD();
+                    }
+                }
+
+                // Melee damage
                 if (dist < player.size + m.size && player.invincible <= 0) {
                     hp--;
                     player.invincible = 1.5;
@@ -353,6 +393,36 @@
                     }
                     spawnWave();
                     updateHUD();
+                }
+            }
+
+            // Projectiles (electric bolts)
+            for (let i = projectiles.length - 1; i >= 0; i--) {
+                const p = projectiles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.life -= dt;
+                if (p.life <= 0) { projectiles.splice(i, 1); continue; }
+                // Hit player
+                const pdx = p.x - player.x, pdy = p.y - player.y;
+                const pdist = Math.sqrt(pdx*pdx + pdy*pdy);
+                if (pdist < player.size + p.size && player.invincible <= 0) {
+                    hp -= p.damage;
+                    player.invincible = 1.5;
+                    spawnParticles(player.x, player.y, '#ffff00', 8);
+                    canvas.classList.add('shake');
+                    setTimeout(() => canvas.classList.remove('shake'), 200);
+                    projectiles.splice(i, 1);
+                    updateHUD();
+                    if (hp <= 0) {
+                        gameOver = true;
+                        gameRunning = false;
+                        overlayTitle.textContent = '💀 被打败了！';
+                        overlayDesc.textContent = '最终得分: ' + score;
+                        overlayDesc2.textContent = '消灭了 ' + wave + ' 波怪兽！';
+                        overlayBtn.textContent = '再来一次';
+                        overlayBtn.classList.remove('hidden');
+                        overlay.classList.remove('hidden');
+                    }
                 }
             }
 
@@ -419,6 +489,24 @@
                 ctx.restore();
             }
 
+            // Draw projectiles (electric bolts)
+            for (const p of projectiles) {
+                ctx.fillStyle = '#ffff00';
+                ctx.shadowColor = '#ffff00';
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                // Electric trail
+                ctx.strokeStyle = '#ffaa00';
+                ctx.lineWidth = 2 * SCALE;
+                ctx.beginPath();
+                ctx.moveTo(p.x, p.y);
+                ctx.lineTo(p.x - p.vx * 3, p.y - p.vy * 3);
+                ctx.stroke();
+            }
+            ctx.shadowBlur = 0;
+
             // Draw monsters
             for (const m of monsters) {
                 ctx.save();
@@ -435,6 +523,17 @@
 
                 const flash = m.hitTimer > 0;
                 if (flash) ctx.fillStyle = '#fff';
+
+                // Spike aura for hedgehog
+                if (m.attack === 'spike') {
+                    ctx.strokeStyle = 'rgba(255,136,0,0.3)';
+                    ctx.lineWidth = 2 * SCALE;
+                    ctx.setLineDash([4 * SCALE, 4 * SCALE]);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, m.size + m.spikeRange * SCALE, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
 
                 // Emoji
                 ctx.font = `${m.size * 2}px Arial`;
