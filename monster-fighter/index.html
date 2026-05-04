@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Leo 打怪兽 🗡️</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #0a0a1a;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            min-height: 100vh; min-height: 100dvh;
+            font-family: 'Arial', sans-serif; color: #fff;
+            overflow: hidden; touch-action: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none; user-select: none;
+        }
+        #hud {
+            display: flex; gap: 16px; padding: 8px 16px;
+            font-size: 16px; max-width: 560px; width: 100%;
+            justify-content: space-between;
+        }
+        #hud span { font-weight: bold; }
+        #hp-bar { color: #ff4444; }
+        #score-display { color: #ffdd00; }
+        #level-display { color: #00ff88; }
+        #wave-display { color: #ff8800; }
+        canvas { display: block; background: #111122; border-radius: 8px; max-width: 100vw; max-height: 60vh; max-height: 60dvh; }
+        #overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center;
+            justify-content: center; background: rgba(0,0,0,0.85);
+            z-index: 10;
+        }
+        #overlay.hidden { display: none; }
+        #overlay h2 { font-size: 32px; margin-bottom: 10px; text-shadow: 0 0 20px rgba(255,68,68,0.8); }
+        #overlay p { font-size: 16px; margin: 5px 0; color: #aaa; }
+        #overlay .btn {
+            margin-top: 20px; padding: 14px 40px; font-size: 22px;
+            background: linear-gradient(135deg, #ff4444, #ff6600);
+            color: #fff; border: none; border-radius: 12px;
+            cursor: pointer; font-weight: bold;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #overlay .btn:active { transform: scale(0.95); }
+        #dpad {
+            display: none; position: fixed; bottom: 15px; left: 15px;
+            width: 155px; height: 155px; z-index: 100;
+        }
+        #dpad button {
+            position: absolute; width: 48px; height: 48px;
+            border: 2px solid rgba(255,68,68,0.5); border-radius: 12px;
+            background: rgba(255,68,68,0.15); color: #ff4444;
+            font-size: 22px; cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+        }
+        #dpad button:active { background: rgba(255,68,68,0.5); }
+        #dpad .up    { top: 0; left: 53px; }
+        #dpad .down  { bottom: 0; left: 53px; }
+        #dpad .left  { top: 53px; left: 0; }
+        #dpad .right { top: 53px; right: 0; }
+        #atk-btn {
+            display: none; position: fixed; bottom: 30px; right: 30px;
+            width: 72px; height: 72px; border-radius: 50%;
+            border: 3px solid rgba(255,255,0,0.6);
+            background: rgba(255,255,0,0.2); color: #ff0;
+            font-size: 28px; font-weight: bold; cursor: pointer;
+            z-index: 100; -webkit-tap-highlight-color: transparent;
+            display: none; align-items: center; justify-content: center;
+        }
+        #atk-btn:active { background: rgba(255,255,0,0.5); }
+        @media (hover: none) and (pointer: coarse) {
+            #dpad, #atk-btn { display: flex !important; }
+            #hud { font-size: 13px; gap: 8px; }
+        }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+        .shake { animation: shake 0.2s; }
+    </style>
+</head>
+<body>
+    <div id="hud">
+        <span>❤️ <span id="hp-bar">5/5</span></span>
+        <span>🗡️ <span id="level-display">Lv.1</span></span>
+        <span>🌊 第 <span id="wave-display">1</span> 波</span>
+        <span>⭐ <span id="score-display">0</span></span>
+    </div>
+    <canvas id="game"></canvas>
+    <div id="overlay">
+        <h2 id="overlay-title">🗡️ Leo 打怪兽</h2>
+        <p id="overlay-desc">方向键移动，空格键攻击</p>
+        <p id="overlay-desc2">消灭所有怪兽，保护家园！</p>
+        <button class="btn" id="overlay-btn">开始战斗</button>
+    </div>
+    <div id="dpad">
+        <button class="up" data-dir="up">▲</button>
+        <button class="down" data-dir="down">▼</button>
+        <button class="left" data-dir="left">◀</button>
+        <button class="right" data-dir="right">▶</button>
+    </div>
+    <button id="atk-btn">⚔️</button>
+
+    <script>
+    (function(){
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
+        const overlayDesc2 = document.getElementById('overlay-desc2');
+        const overlayBtn = document.getElementById('overlay-btn');
+        const hpEl = document.getElementById('hp-bar');
+        const scoreEl = document.getElementById('score-display');
+        const levelEl = document.getElementById('level-display');
+        const waveEl = document.getElementById('wave-display');
+        const dpadBtns = document.querySelectorAll('#dpad button');
+        const atkBtn = document.getElementById('atk-btn');
+
+        let W, H, SCALE;
+        function resize() {
+            const maxW = Math.min(window.innerWidth - 8, 560);
+            const maxH = Math.min(window.innerHeight * 0.58, 420);
+            W = Math.floor(maxW);
+            H = Math.floor(maxH);
+            canvas.width = W; canvas.height = H;
+            SCALE = W / 560;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        const keys = {};
+        document.addEventListener('keydown', e => { keys[e.key.toLowerCase()] = true; if(['arrowup','arrowdown','arrowleft','arrowright',' '].includes(e.key.toLowerCase())) e.preventDefault(); });
+        document.addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
+
+        dpadBtns.forEach(btn => {
+            const d = btn.dataset.dir;
+            const map = {up:'arrowup',down:'arrowdown',left:'arrowleft',right:'arrowright'};
+            btn.addEventListener('touchstart', e => { e.preventDefault(); keys[map[d]] = true; });
+            btn.addEventListener('touchend', e => { e.preventDefault(); keys[map[d]] = false; });
+            btn.addEventListener('touchcancel', e => { keys[map[d]] = false; });
+        });
+        atkBtn.addEventListener('touchstart', e => { e.preventDefault(); keys[' '] = true; });
+        atkBtn.addEventListener('touchend', e => { e.preventDefault(); keys[' '] = false; });
+        atkBtn.addEventListener('mousedown', () => { keys[' '] = true; });
+        atkBtn.addEventListener('mouseup', () => { keys[' '] = false; });
+
+        // Game state
+        let player, monsters, projectiles, particles, hp, score, level, wave, monstersLeft, gameRunning, gameOver, attackCooldown, waveDelay;
+
+        const MONSTER_TYPES = [
+            { emoji: '👾', name: '小怪兽', hp: 1, speed: 1, score: 10, size: 18 },
+            { emoji: '👹', name: '红恶魔', hp: 2, speed: 1.2, score: 20, size: 22 },
+            { emoji: '🐉', name: '恶龙', hp: 3, speed: 0.8, score: 30, size: 26 },
+            { emoji: '🦇', name: '蝙蝠', hp: 1, speed: 2, score: 15, size: 16 },
+            { emoji: '💀', name: '骷髅王', hp: 5, speed: 0.6, score: 50, size: 30 },
+        ];
+
+        function init() {
+            player = { x: W/2, y: H/2, size: 16, speed: 3 * SCALE, dir: 'right', atkRange: 40 * SCALE, atkAngle: 0, atkActive: false, atkTimer: 0, atkDuration: 0.15, invincible: 0, animFrame: 0 };
+            monsters = [];
+            projectiles = [];
+            particles = [];
+            hp = 5; maxHp = 5; score = 0; level = 1; wave = 1;
+            attackCooldown = 0; waveDelay = 0;
+            gameRunning = false; gameOver = false;
+            updateHUD();
+            spawnWave();
+        }
+
+        function updateHUD() {
+            hpEl.textContent = hp + '/' + maxHp;
+            scoreEl.textContent = score;
+            levelEl.textContent = 'Lv.' + level;
+            waveEl.textContent = wave;
+        }
+
+        function spawnWave() {
+            const count = 3 + wave * 2;
+            for (let i = 0; i < count; i++) {
+                let typeIdx = 0;
+                if (wave >= 3 && Math.random() < 0.3) typeIdx = 1;
+                if (wave >= 5 && Math.random() < 0.2) typeIdx = 2;
+                if (wave >= 2 && Math.random() < 0.4) typeIdx = 3;
+                if (wave >= 7 && Math.random() < 0.15) typeIdx = 4;
+
+                const type = MONSTER_TYPES[typeIdx];
+                let mx, my;
+                const side = Math.floor(Math.random() * 4);
+                if (side === 0) { mx = -20; my = Math.random() * H; }
+                else if (side === 1) { mx = W + 20; my = Math.random() * H; }
+                else if (side === 2) { mx = Math.random() * W; my = -20; }
+                else { mx = Math.random() * W; my = H + 20; }
+
+                monsters.push({
+                    x: mx, y: my,
+                    hp: type.hp + Math.floor(wave / 4),
+                    maxHp: type.hp + Math.floor(wave / 4),
+                    speed: type.speed * SCALE * (1 + wave * 0.03),
+                    score: type.score,
+                    size: type.size * SCALE,
+                    emoji: type.emoji,
+                    name: type.name,
+                    hitTimer: 0,
+                    angle: 0
+                });
+            }
+            monstersLeft = monsters.length;
+            showMessage('🌊 第 ' + wave + ' 波怪兽来了！', '#ff8800');
+        }
+
+        function showMessage(text, color) {
+            overlayTitle.textContent = text;
+            overlayDesc.textContent = '';
+            overlayDesc2.textContent = '';
+            overlayBtn.classList.add('hidden');
+            overlay.classList.remove('hidden');
+            setTimeout(() => { if (gameRunning) overlay.classList.add('hidden'); }, 1500);
+        }
+
+        function spawnParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = (Math.random() * 3 + 1) * SCALE;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    life: 1,
+                    color,
+                    size: (Math.random() * 4 + 2) * SCALE
+                });
+            }
+        }
+
+        function attack() {
+            if (attackCooldown > 0 || !gameRunning) return;
+            attackCooldown = 0.3;
+            player.atkActive = true;
+            player.atkTimer = player.atkDuration;
+
+            // Check hit monsters in attack arc
+            const range = player.atkRange;
+            const arc = Math.PI / 2;
+            let baseAngle = player.dir === 'right' ? 0 : player.dir === 'left' ? Math.PI : player.dir === 'up' ? -Math.PI/2 : Math.PI/2;
+
+            for (let i = monsters.length - 1; i >= 0; i--) {
+                const m = monsters[i];
+                const dx = m.x - player.x, dy = m.y - player.y;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist > range + m.size) continue;
+
+                let mAngle = Math.atan2(dy, dx);
+                let diff = mAngle - baseAngle;
+                while (diff > Math.PI) diff -= Math.PI * 2;
+                while (diff < -Math.PI) diff += Math.PI * 2;
+                if (Math.abs(diff) > arc/2) continue;
+
+                m.hp--;
+                m.hitTimer = 0.2;
+                spawnParticles(m.x, m.y, '#ffff00', 5);
+
+                // Knockback
+                const kb = 8 * SCALE;
+                const a = Math.atan2(dy, dx);
+                m.x += Math.cos(a) * kb;
+                m.y += Math.sin(a) * kb;
+
+                if (m.hp <= 0) {
+                    score += m.score;
+                    spawnParticles(m.x, m.y, '#ff4444', 12);
+                    monsters.splice(i, 1);
+                }
+            }
+            updateHUD();
+        }
+
+        function update(dt) {
+            if (!gameRunning || gameOver) return;
+
+            // Player movement
+            let dx = 0, dy = 0;
+            if (keys['arrowleft'] || keys['a']) dx -= 1;
+            if (keys['arrowright'] || keys['d']) dx += 1;
+            if (keys['arrowup'] || keys['w']) dy -= 1;
+            if (keys['arrowdown'] || keys['s']) dy += 1;
+
+            if (dx !== 0 || dy !== 0) {
+                const len = Math.sqrt(dx*dx + dy*dy);
+                dx /= len; dy /= len;
+                player.x += dx * player.speed * 60 * dt;
+                player.y += dy * player.speed * 60 * dt;
+                if (Math.abs(dx) > Math.abs(dy)) player.dir = dx > 0 ? 'right' : 'left';
+                else player.dir = dy > 0 ? 'down' : 'up';
+                player.animFrame += dt * 8;
+            }
+
+            player.x = Math.max(player.size, Math.min(W - player.size, player.x));
+            player.y = Math.max(player.size, Math.min(H - player.size, player.y));
+
+            // Attack
+            if (keys[' ']) attack();
+            if (attackCooldown > 0) attackCooldown -= dt;
+            if (player.atkTimer > 0) player.atkTimer -= dt;
+            else player.atkActive = false;
+            if (player.invincible > 0) player.invincible -= dt;
+
+            // Monsters move toward player
+            for (const m of monsters) {
+                const dx2 = player.x - m.x, dy2 = player.y - m.y;
+                const dist = Math.sqrt(dx2*dx2 + dy2*dy2);
+                if (dist > 0) {
+                    m.x += (dx2/dist) * m.speed * 60 * dt;
+                    m.y += (dy2/dist) * m.speed * 60 * dt;
+                    m.angle += dt * 3;
+                }
+                if (m.hitTimer > 0) m.hitTimer -= dt;
+
+                // Damage player
+                if (dist < player.size + m.size && player.invincible <= 0) {
+                    hp--;
+                    player.invincible = 1.5;
+                    spawnParticles(player.x, player.y, '#ff0000', 8);
+                    canvas.classList.add('shake');
+                    setTimeout(() => canvas.classList.remove('shake'), 200);
+                    updateHUD();
+                    if (hp <= 0) {
+                        gameOver = true;
+                        gameRunning = false;
+                        overlayTitle.textContent = '💀 被打败了！';
+                        overlayDesc.textContent = '最终得分: ' + score;
+                        overlayDesc2.textContent = '消灭了 ' + wave + ' 波怪兽！';
+                        overlayBtn.textContent = '再来一次';
+                        overlayBtn.classList.remove('hidden');
+                        overlay.classList.remove('hidden');
+                    }
+                }
+            }
+
+            // Check wave complete
+            if (monsters.length === 0 && gameRunning) {
+                waveDelay += dt;
+                if (waveDelay > 2) {
+                    wave++;
+                    waveDelay = 0;
+                    // Level up every 3 waves
+                    if (wave % 3 === 1) {
+                        level++;
+                        player.size += 1 * SCALE;
+                        player.speed += 0.2 * SCALE;
+                        maxHp++;
+                        hp = Math.min(hp + 2, maxHp);
+                    }
+                    spawnWave();
+                    updateHUD();
+                }
+            }
+
+            // Particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.life -= dt * 2;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+        }
+
+        function draw() {
+            ctx.fillStyle = '#111122';
+            ctx.fillRect(0, 0, W, H);
+
+            // Ground pattern
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < W; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+            }
+            for (let y = 0; y < H; y += 40) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+            }
+
+            // Draw player
+            if (player.invincible <= 0 || Math.floor(Date.now()/100) % 2 === 0) {
+                ctx.save();
+                ctx.translate(player.x, player.y);
+                const bobY = Math.sin(player.animFrame) * 3 * SCALE;
+
+                // Player body
+                ctx.fillStyle = '#4488ff';
+                ctx.beginPath();
+                ctx.arc(0, bobY, player.size, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Eyes
+                ctx.fillStyle = '#fff';
+                ctx.beginPath(); ctx.arc(-5*SCALE, bobY - 3*SCALE, 4*SCALE, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(5*SCALE, bobY - 3*SCALE, 4*SCALE, 0, Math.PI*2); ctx.fill();
+                ctx.fillStyle = '#000';
+                ctx.beginPath(); ctx.arc(-4*SCALE, bobY - 2*SCALE, 2*SCALE, 0, Math.PI*2); ctx.fill();
+                ctx.beginPath(); ctx.arc(6*SCALE, bobY - 2*SCALE, 2*SCALE, 0, Math.PI*2); ctx.fill();
+
+                // Attack effect
+                if (player.atkActive) {
+                    const baseAngle = player.dir === 'right' ? 0 : player.dir === 'left' ? Math.PI : player.dir === 'up' ? -Math.PI/2 : Math.PI/2;
+                    const t = 1 - player.atkTimer / player.atkDuration;
+                    ctx.strokeStyle = `rgba(255,255,0,${1-t})`;
+                    ctx.lineWidth = 3 * SCALE;
+                    ctx.beginPath();
+                    ctx.arc(0, bobY, player.atkRange * t, baseAngle - Math.PI/4, baseAngle + Math.PI/4);
+                    ctx.stroke();
+                }
+
+                // Helmet
+                ctx.fillStyle = '#ffcc00';
+                ctx.beginPath();
+                ctx.arc(0, bobY - player.size * 0.7, player.size * 0.5, Math.PI, 0);
+                ctx.fill();
+
+                ctx.restore();
+            }
+
+            // Draw monsters
+            for (const m of monsters) {
+                ctx.save();
+                ctx.translate(m.x, m.y);
+
+                // HP bar
+                if (m.maxHp > 1) {
+                    const barW = m.size * 2, barH = 4 * SCALE;
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(-barW/2, -m.size - 8*SCALE, barW, barH);
+                    ctx.fillStyle = '#ff4444';
+                    ctx.fillRect(-barW/2, -m.size - 8*SCALE, barW * (m.hp / m.maxHp), barH);
+                }
+
+                const flash = m.hitTimer > 0;
+                if (flash) ctx.fillStyle = '#fff';
+
+                // Emoji
+                ctx.font = `${m.size * 2}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const wobble = Math.sin(m.angle) * 3;
+                ctx.fillText(m.emoji, wobble * SCALE, 0);
+
+                ctx.restore();
+            }
+
+            // Draw particles
+            for (const p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        let lastTime = 0;
+        function gameLoop(ts) {
+            const dt = Math.min((ts - lastTime) / 1000, 0.05);
+            lastTime = ts;
+            update(dt);
+            draw();
+            if (gameRunning) requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            overlay.classList.add('hidden');
+            init();
+            gameRunning = true;
+            gameOver = false;
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        overlayBtn.addEventListener('click', startGame);
+        overlayBtn.addEventListener('touchend', e => { e.preventDefault(); startGame(); });
+
+        // Initial state
+        init();
+        draw();
+    })();
+    </script>
+</body>
+</html>
