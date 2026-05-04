@@ -3,18 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>吃豆子大冒险 🟡</title>
+    <title>吃豆子大冒险</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            background: #000;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             min-height: 100vh;
             min-height: 100dvh;
-            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Microsoft YaHei', sans-serif;
             color: #fff;
             overflow: hidden;
             touch-action: none;
@@ -22,502 +27,889 @@
             -webkit-user-select: none;
             user-select: none;
         }
-        #header {
+
+        h1 {
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #00ff88;
+        }
+
+        #info-bar {
             display: flex;
-            justify-content: space-between;
-            width: 100%;
-            max-width: 560px;
-            padding: 8px 12px;
+            gap: 30px;
+            margin-bottom: 10px;
             font-size: 18px;
         }
-        #header span { font-weight: bold; }
-        #score { color: #ff0; }
-        #lives { color: #0ff; }
-        #level-display { color: #f80; }
-        canvas { display: block; background: #000; }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .heart {
+            color: #ff4444;
+            font-size: 22px;
+        }
+
+        #gameCanvas {
+            border: 3px solid #00ff88;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+            background: #0a0a1a;
+            max-width: 100vw;
+            max-height: 60vh;
+            max-height: 60dvh;
+        }
+
+        #instructions {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.8;
+            color: #aaa;
+        }
+
+        #instructions span {
+            margin: 0 8px;
+        }
+
+        .bean-small { color: #00ff88; }
+        .bean-big { color: #ff8800; }
+        .bomb { color: #ff4444; }
+        .coin { color: #ffdd00; }
+        .fruit { color: #ff66cc; }
+        .trap { color: #9900ff; }
+
+        #gameOverScreen, #startScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 10;
+        }
+
+        .hidden { display: none !important; }
+
+        .btn {
+            margin-top: 20px;
+            padding: 12px 30px;
+            font-size: 18px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #00ff88, #00cc66);
+            color: #1a1a2e;
+            cursor: pointer;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+        }
+
         #message {
             position: absolute;
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 24px;
-            color: #ff0;
-            text-align: center;
-            display: none;
-            text-shadow: 0 0 10px rgba(255,255,0,0.8);
+            font-size: 36px;
+            font-weight: bold;
+            text-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 5;
         }
+
+        #message.show {
+            opacity: 1;
+        }
+    
         #dpad {
             display: none;
             position: fixed;
             bottom: 20px;
             left: 20px;
-            width: 150px;
-            height: 150px;
+            width: 160px;
+            height: 160px;
+            z-index: 100;
         }
         #dpad button {
             position: absolute;
-            width: 48px;
-            height: 48px;
+            width: 50px;
+            height: 50px;
             border: 2px solid rgba(255,255,255,0.5);
-            border-radius: 12px;
-            background: rgba(255,255,255,0.15);
-            color: #fff;
-            font-size: 22px;
+            border-radius: 14px;
+            background: rgba(0,255,136,0.2);
+            color: #00ff88;
+            font-size: 24px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
             -webkit-tap-highlight-color: transparent;
+            transition: background 0.1s;
         }
-        #dpad button:active { background: rgba(255,255,255,0.4); }
-        #dpad .up    { top: 0; left: 51px; }
-        #dpad .down  { bottom: 0; left: 51px; }
-        #dpad .left  { top: 51px; left: 0; }
-        #dpad .right { top: 51px; right: 0; }
-        #start-btn {
-            padding: 12px 32px;
-            font-size: 20px;
-            background: #ff0;
-            color: #000;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            margin-top: 10px;
-            font-weight: bold;
+        #dpad button:active {
+            background: rgba(0,255,136,0.5);
         }
+        #dpad .up    { top: 0; left: 55px; }
+        #dpad .down  { bottom: 0; left: 55px; }
+        #dpad .left  { top: 55px; left: 0; }
+        #dpad .right { top: 55px; right: 0; }
         @media (hover: none) and (pointer: coarse) {
             #dpad { display: block; }
+            #instructions { font-size: 11px; }
+            h1 { font-size: 20px; }
+            #info-bar { font-size: 14px; gap: 15px; }
         }
+
     </style>
 </head>
 <body>
-    <div id="header">
-        <span>🟡 吃豆子</span>
-        <span>得分: <span id="score">0</span></span>
-        <span>关卡: <span id="level-display">1</span></span>
-        <span>❤️ <span id="lives">3</span></span>
+    <h1>吃豆子大冒险</h1>
+    <div id="info-bar">
+        <div class="info-item">
+            <span>生命:</span>
+            <span id="lives" class="heart">❤❤❤❤❤</span>
+        </div>
+        <div class="info-item">
+            <span>关卡:</span>
+            <span id="level">1</span>
+        </div>
+        <div class="info-item">
+            <span>得分:</span>
+            <span id="score">0</span>
+        </div>
     </div>
-    <canvas id="game"></canvas>
-    <div id="message">
-        <div id="msg-text"></div>
-        <button id="start-btn">开始游戏</button>
+    <div style="position: relative;">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="message"></div>
+        <div id="startScreen">
+            <h2>准备好了吗？</h2>
+            <p style="margin-top: 10px;">使用方向键或 WASD 移动</p>
+            <button class="btn" onclick="startGame()">开始游戏</button>
+        </div>
+        <div id="gameOverScreen" class="hidden">
+            <h2 id="gameOverText">游戏结束</h2>
+            <p style="margin-top: 10px;">最终得分: <span id="finalScore">0</span></p>
+            <button class="btn" onclick="restartGame()">重新开始</button>
+        </div>
+        <div id="dpad">
+        <button class="up" data-dir="up" aria-label="上">▲</button>
+        <button class="down" data-dir="down" aria-label="下">▼</button>
+        <button class="left" data-dir="left" aria-label="左">◀</button>
+        <button class="right" data-dir="right" aria-label="右">▶</button>
     </div>
-    <div id="dpad">
-        <button class="up" data-dir="up">▲</button>
-        <button class="down" data-dir="down">▼</button>
-        <button class="left" data-dir="left">◀</button>
-        <button class="right" data-dir="right">▶</button>
     </div>
+    <div id="instructions">
+        <span class="bean-small">● 小豆子(吃)</span>
+        <span class="bean-big">● 大豆子(反弹)</span>
+        <span class="bomb">💣 炸弹(减命)</span>
+        <span class="coin">🪙 硬币(加命)</span>
+        <span class="fruit">🍎 果子(回第一关)</span>
+        <span class="trap">⭕ 陷阱(减2命)</span>
+    </div>
+
     <script>
-    (function() {
-        const canvas = document.getElementById('game');
+        const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const msgDiv = document.getElementById('message');
-        const msgText = document.getElementById('msg-text');
-        const startBtn = document.getElementById('start-btn');
-        const scoreEl = document.getElementById('score');
         const livesEl = document.getElementById('lives');
-        const levelEl = document.getElementById('level-display');
-
-        // Map layout: 0=empty(dot) 1=wall 2=empty 3=power 4=ghost-house
-        const MAP = [
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-            [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
-            [1,3,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,3,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,0,1,1,0,1,0,1,1,1,1,1,0,1,0,1,1,0,1],
-            [1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1],
-            [1,1,1,1,0,1,1,1,2,1,2,1,1,1,0,1,1,1,1],
-            [1,1,1,1,0,1,2,2,2,2,2,2,2,1,0,1,1,1,1],
-            [1,1,1,1,0,1,2,1,1,4,1,1,2,1,0,1,1,1,1],
-            [2,2,2,2,0,2,2,1,4,4,4,1,2,2,0,2,2,2,2],
-            [1,1,1,1,0,1,2,1,1,1,1,1,2,1,0,1,1,1,1],
-            [1,1,1,1,0,1,2,2,2,2,2,2,2,1,0,1,1,1,1],
-            [1,1,1,1,0,1,2,1,1,1,1,1,2,1,0,1,1,1,1],
-            [1,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1],
-            [1,0,1,1,0,1,1,1,0,1,0,1,1,1,0,1,1,0,1],
-            [1,3,0,1,0,0,0,0,0,2,0,0,0,0,0,1,0,3,1],
-            [1,1,0,1,0,1,0,1,1,1,1,1,0,1,0,1,0,1,1],
-            [1,0,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,0,1],
-            [1,0,1,1,1,1,1,1,0,1,0,1,1,1,1,1,1,0,1],
-            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
-        ];
-        const ROWS = MAP.length, COLS = MAP[0].length;
-        let TILE, offsetX, offsetY;
-
-        function resize() {
-            const maxW = window.innerWidth - 4;
-            const maxH = window.innerHeight - 80;
-            TILE = Math.floor(Math.min(maxW / COLS, maxH / ROWS));
-            TILE = Math.max(TILE, 12);
-            canvas.width = COLS * TILE;
-            canvas.height = ROWS * TILE;
-        }
-        resize();
-        window.addEventListener('resize', resize);
+        const levelEl = document.getElementById('level');
+        const scoreEl = document.getElementById('score');
+        const messageEl = document.getElementById('message');
+        const startScreen = document.getElementById('startScreen');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const gameOverText = document.getElementById('gameOverText');
+        const finalScoreEl = document.getElementById('finalScore');
 
         // Game state
-        let map, score, lives, level, gameState, pac, ghosts, powerTimer, animFrame;
-        let lastTime = 0, moveTimer = 0, ghostTimer = 0;
+        let gameRunning = false;
+        let lives = 5;
+        let level = 1;
+        let score = 0;
+        let animationId;
+        let lastTime = 0;
 
-        const DIRS = {
-            up:    { x: 0, y: -1 },
-            down:  { x: 0, y: 1 },
-            left:  { x: -1, y: 0 },
-            right: { x: 1, y: 0 }
+        // Player
+        const player = {
+            x: 400,
+            y: 300,
+            startX: 400,
+            startY: 300,
+            baseRadius: 15,
+            radius: 15,
+            maxRadius: 28,
+            speed: 200,
+            vx: 0,
+            vy: 0,
+            mouthAngle: 0,
+            mouthSpeed: 10,
+            invincible: false,
+            invincibleTime: 0
         };
 
-        const GHOST_COLORS = ['#ff0000', '#ffb8ff', '#00ffff', '#ffb852'];
-        const GHOST_NAMES = ['Blinky', 'Pinky', 'Inky', 'Clyde'];
+        // Items
+        let beans = [];
+        let bombs = [];
+        let coins = [];
+        let fruits = [];
+        let traps = [];
+        let particles = [];
 
-        function countDots() {
-            let n = 0;
-            for (let r = 0; r < ROWS; r++)
-                for (let c = 0; c < COLS; c++)
-                    if (map[r][c] === 0 || map[r][c] === 3) n++;
-            return n;
+        // Keys
+        const keys = {};
+
+        // Item types
+        const BEAN_SMALL = 0;
+        const BEAN_BIG = 1;
+
+        document.addEventListener('keydown', (e) => {
+            keys[e.key.toLowerCase()] = true;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        function showMessage(text, color = '#fff') {
+            messageEl.textContent = text;
+            messageEl.style.color = color;
+            messageEl.classList.add('show');
+            setTimeout(() => {
+                messageEl.classList.remove('show');
+            }, 1500);
         }
 
-        function initLevel() {
-            map = MAP.map(r => [...r]);
-            pac = { x: 9, y: 15, dir: 'left', nextDir: 'left', mouth: 0, mouthOpen: true };
-            ghosts = [
-                { x: 9, y: 8, dir: 'up', color: GHOST_COLORS[0], name: GHOST_NAMES[0], scared: false, home: false, releaseTime: 0 },
-                { x: 8, y: 9, dir: 'up', color: GHOST_COLORS[1], name: GHOST_NAMES[1], scared: false, home: true, releaseTime: 3000 },
-                { x: 9, y: 9, dir: 'up', color: GHOST_COLORS[2], name: GHOST_NAMES[2], scared: false, home: true, releaseTime: 6000 },
-                { x: 10, y: 9, dir: 'up', color: GHOST_COLORS[3], name: GHOST_NAMES[3], scared: false, home: true, releaseTime: 9000 },
-            ];
-            powerTimer = 0;
-            if (countDots() === 0) { initMap(); }
+        function updateLivesDisplay() {
+            livesEl.textContent = '❤'.repeat(Math.max(0, lives));
         }
 
-        function initMap() {
-            map = MAP.map(r => [...r]);
-        }
+        function getSafePosition(radius, existingItems, minDistance = 35) {
+            let x, y, safe;
+            let attempts = 0;
+            const margin = 30;
 
-        function canMove(x, y) {
-            if (y < 0 || y >= ROWS) return false;
-            if (x < 0) x = COLS - 1;
-            if (x >= COLS) x = 0;
-            return map[y][x] !== 1;
-        }
+            do {
+                safe = true;
+                x = Math.random() * (canvas.width - margin * 2) + margin;
+                y = Math.random() * (canvas.height - margin * 2) + margin;
+                attempts++;
 
-        function wrapX(x) {
-            if (x < 0) return COLS - 1;
-            if (x >= COLS) return 0;
-            return x;
-        }
+                // Don't spawn too close to player start
+                const distToPlayer = Math.sqrt((x - player.startX) ** 2 + (y - player.startY) ** 2);
+                if (distToPlayer < 80) safe = false;
 
-        function movePac(dt) {
-            moveTimer += dt;
-            const speed = Math.max(120 - level * 5, 80);
-            if (moveTimer < speed) return;
-            moveTimer = 0;
-
-            // Try next direction
-            let nx = pac.x + DIRS[pac.nextDir].x;
-            let ny = pac.y + DIRS[pac.nextDir].y;
-            nx = wrapX(nx);
-            if (canMove(nx, ny)) pac.dir = pac.nextDir;
-
-            nx = pac.x + DIRS[pac.dir].x;
-            ny = pac.y + DIRS[pac.dir].y;
-            nx = wrapX(nx);
-            if (canMove(nx, ny)) {
-                pac.x = nx;
-                pac.y = ny;
-            }
-
-            // Eat dot
-            if (map[pac.y][pac.x] === 0) {
-                map[pac.y][pac.x] = 2;
-                score += 10;
-            } else if (map[pac.y][pac.x] === 3) {
-                map[pac.y][pac.x] = 2;
-                score += 50;
-                powerTimer = 6000;
-                ghosts.forEach(g => { if (!g.home) g.scared = true; });
-            }
-
-            scoreEl.textContent = score;
-
-            // Check level complete
-            if (countDots() === 0) {
-                level++;
-                levelEl.textContent = level;
-                initMap();
-                pac = { x: 9, y: 15, dir: 'left', nextDir: 'left', mouth: 0, mouthOpen: true };
-                ghosts.forEach(g => { g.x = 9; g.y = 9; g.home = true; g.scared = false; g.releaseTime = (GHOST_NAMES.indexOf(g.name)) * 3000; });
-            }
-        }
-
-        function dist(x1, y1, x2, y2) {
-            return Math.abs(x1 - x2) + Math.abs(y1 - y2);
-        }
-
-        function moveGhosts(dt) {
-            ghostTimer += dt;
-            const speed = Math.max(180 - level * 8, 100);
-            if (ghostTimer < speed) return;
-            ghostTimer = 0;
-
-            const now = performance.now() - gameStart;
-            ghosts.forEach((g, i) => {
-                // Release from home
-                if (g.home) {
-                    if (now >= g.releaseTime) {
-                        g.home = false;
-                        g.x = 9;
-                        g.y = 7;
-                        g.dir = 'left';
-                    }
-                    return;
-                }
-
-                // Scared timer
-                if (g.scared && powerTimer <= 0) g.scared = false;
-
-                // Choose direction
-                const opp = { up: 'down', down: 'up', left: 'right', right: 'left' };
-                const options = ['up', 'down', 'left', 'right'].filter(d => {
-                    const nx = wrapX(g.x + DIRS[d].x);
-                    const ny = g.y + DIRS[d].y;
-                    return canMove(nx, ny) && d !== opp[g.dir];
-                });
-                if (options.length === 0) {
-                    // Allow reverse
-                    const nx = wrapX(g.x + DIRS[opp[g.dir]].x);
-                    const ny = g.y + DIRS[opp[g.dir]].y;
-                    if (canMove(nx, ny)) options.push(opp[g.dir]);
-                }
-                if (options.length === 0) return;
-
-                if (g.scared) {
-                    // Random move when scared
-                    g.dir = options[Math.floor(Math.random() * options.length)];
-                } else {
-                    // Chase pac (simple AI)
-                    let targetX = pac.x, targetY = pac.y;
-                    // Add some personality
-                    if (g.name === 'Pinky') { targetX += DIRS[pac.dir].x * 2; targetY += DIRS[pac.dir].y * 2; }
-                    if (g.name === 'Inky') { targetX = COLS - pac.x; }
-
-                    let best = options[0], bestDist = Infinity;
-                    options.forEach(d => {
-                        const nx = wrapX(g.x + DIRS[d].x);
-                        const ny = g.y + DIRS[d].y;
-                        const dd = dist(nx, ny, targetX, targetY);
-                        if (dd < bestDist) { bestDist = dd; best = d; }
-                    });
-                    // Add some randomness
-                    if (Math.random() < 0.2) best = options[Math.floor(Math.random() * options.length)];
-                    g.dir = best;
-                }
-
-                let nx = wrapX(g.x + DIRS[g.dir].x);
-                let ny = g.y + DIRS[g.dir].y;
-                if (canMove(nx, ny)) { g.x = nx; g.y = ny; }
-
-                // Collision with pac
-                if (g.x === pac.x && g.y === pac.y) {
-                    if (g.scared) {
-                        score += 200;
-                        scoreEl.textContent = score;
-                        g.home = true;
-                        g.x = 9; g.y = 9;
-                        g.scared = false;
-                    } else {
-                        lives--;
-                        livesEl.textContent = lives;
-                        if (lives <= 0) {
-                            gameState = 'over';
-                            showMsg('💀 游戏结束!\n得分: ' + score, '重新开始');
-                        } else {
-                            pac.x = 9; pac.y = 15; pac.dir = 'left'; pac.nextDir = 'left';
-                            ghosts.forEach(gh => { gh.x = 9; gh.y = 8; gh.home = false; gh.scared = false; });
+                // Check against all existing items
+                if (safe) {
+                    for (const item of existingItems) {
+                        const dist = Math.sqrt((x - item.x) ** 2 + (y - item.y) ** 2);
+                        if (dist < radius + item.radius + minDistance) {
+                            safe = false;
+                            break;
                         }
                     }
                 }
-            });
+            } while (!safe && attempts < 100);
+
+            return { x, y };
         }
 
-        let gameStart;
+        function spawnItems() {
+            beans = [];
+            bombs = [];
+            coins = [];
+            fruits = [];
+            const allItems = [];
 
-        function showMsg(text, btnText) {
-            msgText.textContent = text;
-            startBtn.textContent = btnText || '开始';
-            msgDiv.style.display = 'block';
+            const count = 8 + level * 2;
+
+            // Small beans (can eat)
+            for (let i = 0; i < count; i++) {
+                const pos = getSafePosition(8, allItems);
+                const bean = {
+                    x: pos.x,
+                    y: pos.y,
+                    radius: 8,
+                    type: BEAN_SMALL,
+                    pulse: Math.random() * Math.PI * 2
+                };
+                beans.push(bean);
+                allItems.push(bean);
+            }
+
+            // Big beans (bounce back)
+            const bigCount = 3 + Math.floor(level / 2);
+            for (let i = 0; i < bigCount; i++) {
+                const pos = getSafePosition(20, allItems);
+                const bean = {
+                    x: pos.x,
+                    y: pos.y,
+                    radius: 20,
+                    type: BEAN_BIG,
+                    pulse: Math.random() * Math.PI * 2
+                };
+                beans.push(bean);
+                allItems.push(bean);
+            }
+
+            // Bombs
+            const bombCount = 2 + Math.floor(level / 3);
+            for (let i = 0; i < bombCount; i++) {
+                const pos = getSafePosition(15, allItems);
+                const bomb = {
+                    x: pos.x,
+                    y: pos.y,
+                    radius: 15,
+                    pulse: Math.random() * Math.PI * 2
+                };
+                bombs.push(bomb);
+                allItems.push(bomb);
+            }
+
+            // Coins (extra life)
+            const coinCount = Math.random() < 0.5 ? 1 : 2;
+            for (let i = 0; i < coinCount; i++) {
+                const pos = getSafePosition(12, allItems);
+                const coin = {
+                    x: pos.x,
+                    y: pos.y,
+                    radius: 12,
+                    pulse: Math.random() * Math.PI * 2
+                };
+                coins.push(coin);
+                allItems.push(coin);
+            }
+
+            // Fruits (reset to level 1)
+            if (level > 1 && Math.random() < 0.4) {
+                const pos = getSafePosition(14, allItems);
+                const fruit = {
+                    x: pos.x,
+                    y: pos.y,
+                    radius: 14,
+                    pulse: Math.random() * Math.PI * 2
+                };
+                fruits.push(fruit);
+                allItems.push(fruit);
+            }
+
+            // Traps (lose 2 lives)
+            const trapCount = 1 + Math.floor(level / 4);
+            for (let i = 0; i < trapCount; i++) {
+                const pos = getSafePosition(25, allItems, 50);
+                const trap = {
+                    x: pos.x,
+                    y: pos.y,
+                    radius: 25,
+                    pulse: Math.random() * Math.PI * 2
+                };
+                traps.push(trap);
+                allItems.push(trap);
+            }
         }
 
-        function hideMsg() { msgDiv.style.display = 'none'; }
+        function createExplosion(x, y, color) {
+            for (let i = 0; i < 20; i++) {
+                const angle = (Math.PI * 2 / 20) * i;
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: Math.cos(angle) * 150,
+                    vy: Math.sin(angle) * 150,
+                    radius: Math.random() * 4 + 2,
+                    color: color,
+                    life: 1.0
+                });
+            }
+        }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        function resetPlayer() {
+            player.x = player.startX;
+            player.y = player.startY;
+            player.vx = 0;
+            player.vy = 0;
+            player.radius = player.baseRadius;
+            player.invincible = true;
+            player.invincibleTime = 2.0;
+        }
 
-            // Draw map
-            for (let r = 0; r < ROWS; r++) {
-                for (let c = 0; c < COLS; c++) {
-                    const x = c * TILE, y = r * TILE;
-                    if (map[r][c] === 1) {
-                        ctx.fillStyle = '#1a1aff';
-                        ctx.fillRect(x, y, TILE, TILE);
-                        ctx.fillStyle = '#000';
-                        ctx.fillRect(x + 1, y + 1, TILE - 2, TILE - 2);
-                        ctx.strokeStyle = '#2a2aff';
-                        ctx.lineWidth = 1;
-                        ctx.strokeRect(x + 1.5, y + 1.5, TILE - 3, TILE - 3);
-                    } else if (map[r][c] === 0) {
-                        ctx.fillStyle = '#ffd700';
-                        ctx.beginPath();
-                        ctx.arc(x + TILE / 2, y + TILE / 2, Math.max(TILE * 0.12, 2), 0, Math.PI * 2);
-                        ctx.fill();
-                    } else if (map[r][c] === 3) {
-                        ctx.fillStyle = '#ffd700';
-                        ctx.beginPath();
-                        ctx.arc(x + TILE / 2, y + TILE / 2, Math.max(TILE * 0.25, 4), 0, Math.PI * 2);
-                        ctx.fill();
+        function loseLife() {
+            lives--;
+            updateLivesDisplay();
+            createExplosion(player.x, player.y, '#ff4444');
+
+            if (lives <= 0) {
+                gameOver();
+            } else {
+                showMessage('💥 砰！减一条命！', '#ff4444');
+                resetPlayer();
+            }
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            cancelAnimationFrame(animationId);
+            gameOverText.textContent = '游戏结束';
+            finalScoreEl.textContent = score;
+            gameOverScreen.classList.remove('hidden');
+        }
+
+        function nextLevel() {
+            level++;
+            levelEl.textContent = level;
+            showMessage(`🎉 第 ${level} 关！`, '#00ff88');
+            resetPlayer();
+            spawnItems();
+        }
+
+        function resetToLevel1() {
+            level = 1;
+            levelEl.textContent = level;
+            showMessage('🍎 吃到果子了！回到第一关！', '#ff66cc');
+            resetPlayer();
+            spawnItems();
+        }
+
+        function update(dt) {
+            if (!gameRunning) return;
+
+            // Player movement
+            let dx = 0, dy = 0;
+            if (keys['arrowleft'] || keys['a']) dx -= 1;
+            if (keys['arrowright'] || keys['d']) dx += 1;
+            if (keys['arrowup'] || keys['w']) dy -= 1;
+            if (keys['arrowdown'] || keys['s']) dy += 1;
+
+            if (dx !== 0 || dy !== 0) {
+                const len = Math.sqrt(dx * dx + dy * dy);
+                dx /= len;
+                dy /= len;
+                player.vx = dx * player.speed;
+                player.vy = dy * player.speed;
+            } else {
+                player.vx = 0;
+                player.vy = 0;
+            }
+
+            player.x += player.vx * dt;
+            player.y += player.vy * dt;
+
+            // Keep in bounds
+            player.x = Math.max(player.radius, Math.min(canvas.width - player.radius, player.x));
+            player.y = Math.max(player.radius, Math.min(canvas.height - player.radius, player.y));
+
+            // Mouth animation
+            player.mouthAngle += player.mouthSpeed * dt;
+
+            // Invincibility
+            if (player.invincible) {
+                player.invincibleTime -= dt;
+                if (player.invincibleTime <= 0) {
+                    player.invincible = false;
+                }
+            }
+
+            // Check collisions with beans
+            for (let i = beans.length - 1; i >= 0; i--) {
+                const bean = beans[i];
+                const dist = Math.sqrt((player.x - bean.x) ** 2 + (player.y - bean.y) ** 2);
+
+                if (dist < player.radius + bean.radius) {
+                    if (bean.type === BEAN_SMALL) {
+                        // Eat small bean
+                        score += 10;
+                        scoreEl.textContent = score;
+                        createExplosion(bean.x, bean.y, '#00ff88');
+                        beans.splice(i, 1);
+
+                        // Grow bigger
+                        player.radius = Math.min(player.maxRadius, player.radius + 0.8);
+
+                        // Check level complete
+                        const smallBeansLeft = beans.filter(b => b.type === BEAN_SMALL).length;
+                        if (smallBeansLeft === 0) {
+                            nextLevel();
+                        }
+                    } else {
+                        if (player.radius >= bean.radius) {
+                            // Big enough to eat the big bean!
+                            score += 50;
+                            scoreEl.textContent = score;
+                            createExplosion(bean.x, bean.y, '#ff8800');
+                            beans.splice(i, 1);
+                            player.radius = Math.min(player.maxRadius, player.radius + 1.5);
+                            showMessage('😋 一口吞掉大豆子！', '#ffaa00');
+                        } else {
+                            // Big bean - bounce back to start
+                            showMessage('😵 太大了！反弹！', '#ff8800');
+                            createExplosion(player.x, player.y, '#ff8800');
+                            resetPlayer();
+                        }
                     }
                 }
             }
 
-            // Draw pac
-            const px = pac.x * TILE + TILE / 2, py = pac.y * TILE + TILE / 2;
-            pac.mouth += pac.mouthOpen ? 0.15 : -0.15;
-            if (pac.mouth >= 0.8) pac.mouthOpen = false;
-            if (pac.mouth <= 0.1) pac.mouthOpen = true;
-            let angle = 0;
-            if (pac.dir === 'right') angle = 0;
-            else if (pac.dir === 'down') angle = Math.PI / 2;
-            else if (pac.dir === 'left') angle = Math.PI;
-            else if (pac.dir === 'up') angle = -Math.PI / 2;
-            ctx.fillStyle = '#ff0';
-            ctx.beginPath();
-            ctx.arc(px, py, TILE * 0.45, angle + pac.mouth * 0.3, angle + Math.PI * 2 - pac.mouth * 0.3);
-            ctx.lineTo(px, py);
-            ctx.fill();
+            // Check collisions with bombs
+            if (!player.invincible) {
+                for (let i = bombs.length - 1; i >= 0; i--) {
+                    const bomb = bombs[i];
+                    const dist = Math.sqrt((player.x - bomb.x) ** 2 + (player.y - bomb.y) ** 2);
 
-            // Draw ghosts
-            ghosts.forEach(g => {
-                if (g.home && g.x === 9 && g.y === 9 && performance.now() - gameStart < g.releaseTime) {
-                    // Draw in ghost house
-                    const gx = g.x * TILE + TILE / 2, gy = g.y * TILE + TILE / 2;
-                    ctx.fillStyle = g.scared ? '#2222ff' : g.color;
-                    ctx.beginPath();
-                    ctx.arc(gx, gy - TILE * 0.1, TILE * 0.4, Math.PI, 0);
-                    ctx.lineTo(gx + TILE * 0.4, gy + TILE * 0.35);
-                    for (let i = 0; i < 3; i++) {
-                        ctx.lineTo(gx + TILE * 0.4 - (i + 1) * TILE * 0.27, gy + TILE * 0.35 + (i % 2 === 0 ? TILE * 0.15 : -TILE * 0.15));
+                    if (dist < player.radius + bomb.radius) {
+                        bombs.splice(i, 1);
+                        loseLife();
                     }
-                    ctx.fill();
-                    return;
                 }
-                const gx = g.x * TILE + TILE / 2, gy = g.y * TILE + TILE / 2;
-                ctx.fillStyle = g.scared ? (powerTimer < 2000 && Math.floor(powerTimer / 200) % 2 ? '#fff' : '#2222ff') : g.color;
-                // Ghost body
-                ctx.beginPath();
-                ctx.arc(gx, gy - TILE * 0.1, TILE * 0.42, Math.PI, 0);
-                ctx.lineTo(gx + TILE * 0.42, gy + TILE * 0.35);
-                for (let i = 0; i < 3; i++) {
-                    const bx = gx + TILE * 0.42 - (i + 1) * TILE * 0.28;
-                    ctx.lineTo(bx, gy + TILE * 0.35 + (i % 2 === 0 ? TILE * 0.15 : -TILE * 0.15));
+            }
+
+            // Check collisions with coins
+            for (let i = coins.length - 1; i >= 0; i--) {
+                const coin = coins[i];
+                const dist = Math.sqrt((player.x - coin.x) ** 2 + (player.y - coin.y) ** 2);
+
+                if (dist < player.radius + coin.radius) {
+                    lives = Math.min(5, lives + 1);
+                    updateLivesDisplay();
+                    score += 50;
+                    scoreEl.textContent = score;
+                    createExplosion(coin.x, coin.y, '#ffdd00');
+                    coins.splice(i, 1);
+                    showMessage('🪙 加一条命！', '#ffdd00');
                 }
-                ctx.fill();
-                // Eyes
-                ctx.fillStyle = '#fff';
-                ctx.beginPath();
-                ctx.arc(gx - TILE * 0.15, gy - TILE * 0.15, TILE * 0.12, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(gx + TILE * 0.15, gy - TILE * 0.15, TILE * 0.12, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#00f';
-                ctx.beginPath();
-                ctx.arc(gx - TILE * 0.12, gy - TILE * 0.12, TILE * 0.06, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.beginPath();
-                ctx.arc(gx + TILE * 0.18, gy - TILE * 0.12, TILE * 0.06, 0, Math.PI * 2);
-                ctx.fill();
+            }
+
+            // Check collisions with fruits
+            for (let i = fruits.length - 1; i >= 0; i--) {
+                const fruit = fruits[i];
+                const dist = Math.sqrt((player.x - fruit.x) ** 2 + (player.y - fruit.y) ** 2);
+
+                if (dist < player.radius + fruit.radius) {
+                    createExplosion(fruit.x, fruit.y, '#ff66cc');
+                    fruits.splice(i, 1);
+                    resetToLevel1();
+                }
+            }
+
+            // Check collisions with traps
+            if (!player.invincible) {
+                for (let i = traps.length - 1; i >= 0; i--) {
+                    const trap = traps[i];
+                    const dist = Math.sqrt((player.x - trap.x) ** 2 + (player.y - trap.y) ** 2);
+
+                    // Must be mostly inside the trap circle to trigger
+                    if (dist < trap.radius - player.radius * 0.5) {
+                        createExplosion(player.x, player.y, '#9900ff');
+                        showMessage('💀 掉进陷阱！减两条命！', '#9900ff');
+                        lives -= 2;
+                        updateLivesDisplay();
+                        if (lives <= 0) {
+                            gameOver();
+                        } else {
+                            resetPlayer();
+                        }
+                        break; // Only trigger one trap at a time
+                    }
+                }
+            }
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.life -= dt * 2;
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Pulse animation for items
+            const time = Date.now() / 1000;
+            [...beans, ...bombs, ...coins, ...fruits].forEach(item => {
+                item.pulse += dt * 3;
             });
         }
 
-        function gameLoop(time) {
-            if (gameState !== 'playing') return;
-            animFrame = requestAnimationFrame(gameLoop);
-            const dt = time - lastTime;
-            lastTime = time;
+        function draw() {
+            // Clear
+            ctx.fillStyle = '#0a0a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            if (powerTimer > 0) powerTimer -= dt;
-            if (powerTimer <= 0) ghosts.forEach(g => g.scared = false);
+            // Draw grid pattern
+            ctx.strokeStyle = 'rgba(0, 255, 136, 0.05)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
 
-            movePac(dt);
-            moveGhosts(dt);
+            // Draw big beans first (behind small beans)
+            beans.filter(b => b.type === BEAN_BIG).forEach(bean => {
+                const pulse = Math.sin(bean.pulse) * 2;
+                ctx.fillStyle = '#ff8800';
+                ctx.shadowColor = '#ff8800';
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(bean.x, bean.y, bean.radius + pulse * 0.5, 0, Math.PI * 2);
+                ctx.fill();
+                // Warning ring
+                ctx.strokeStyle = '#ffaa44';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(bean.x, bean.y, bean.radius + pulse * 0.5 + 5, 0, Math.PI * 2);
+                ctx.stroke();
+            });
+
+            // Draw small beans on top
+            beans.filter(b => b.type === BEAN_SMALL).forEach(bean => {
+                const pulse = Math.sin(bean.pulse) * 2;
+                ctx.fillStyle = '#00ff88';
+                ctx.shadowColor = '#00ff88';
+                ctx.shadowBlur = 10;
+                ctx.beginPath();
+                ctx.arc(bean.x, bean.y, bean.radius + pulse * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw bombs
+            bombs.forEach(bomb => {
+                const pulse = Math.sin(bomb.pulse) * 3;
+                ctx.fillStyle = '#ff4444';
+                ctx.shadowColor = '#ff4444';
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(bomb.x, bomb.y, bomb.radius + pulse * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Bomb fuse
+                ctx.strokeStyle = '#ffaa44';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(bomb.x, bomb.y - bomb.radius);
+                ctx.lineTo(bomb.x + 5, bomb.y - bomb.radius - 8);
+                ctx.stroke();
+
+                // Spark
+                ctx.fillStyle = '#ffdd00';
+                ctx.beginPath();
+                ctx.arc(bomb.x + 5, bomb.y - bomb.radius - 8, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw coins
+            coins.forEach(coin => {
+                const pulse = Math.sin(coin.pulse) * 3;
+                ctx.fillStyle = '#ffdd00';
+                ctx.shadowColor = '#ffdd00';
+                ctx.shadowBlur = 15;
+                ctx.beginPath();
+                ctx.arc(coin.x, coin.y, coin.radius + pulse * 0.3, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = '#aa8800';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('$', coin.x, coin.y);
+            });
+
+            // Draw fruits
+            fruits.forEach(fruit => {
+                const pulse = Math.sin(fruit.pulse) * 3;
+                ctx.font = `${20 + pulse}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.shadowBlur = 0;
+                ctx.fillText('🍎', fruit.x, fruit.y);
+            });
+
+            // Draw traps (under player)
+            traps.forEach(trap => {
+                const pulse = Math.sin(trap.pulse) * 4;
+                ctx.strokeStyle = '#9900ff';
+                ctx.shadowColor = '#9900ff';
+                ctx.shadowBlur = 10;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.arc(trap.x, trap.y, trap.radius + pulse * 0.3, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Inner ring
+                ctx.strokeStyle = 'rgba(153, 0, 255, 0.4)';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(trap.x, trap.y, trap.radius - 6, 0, Math.PI * 2);
+                ctx.stroke();
+
+                // Danger symbol in center
+                ctx.fillStyle = 'rgba(153, 0, 255, 0.3)';
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('!', trap.x, trap.y);
+            });
+
+            // Draw player
+            if (!player.invincible || Math.floor(Date.now() / 100) % 2 === 0) {
+                ctx.fillStyle = '#ffff00';
+                ctx.shadowColor = '#ffff00';
+                ctx.shadowBlur = 15;
+
+                const mouthOpen = Math.abs(Math.sin(player.mouthAngle)) * 0.3;
+                let baseAngle = 0;
+
+                if (player.vx > 0) baseAngle = 0;
+                else if (player.vx < 0) baseAngle = Math.PI;
+                else if (player.vy < 0) baseAngle = -Math.PI / 2;
+                else if (player.vy > 0) baseAngle = Math.PI / 2;
+
+                ctx.beginPath();
+                ctx.moveTo(player.x, player.y);
+                ctx.arc(player.x, player.y, player.radius, baseAngle + mouthOpen, baseAngle + Math.PI * 2 - mouthOpen);
+                ctx.closePath();
+                ctx.fill();
+
+                // Eye
+                ctx.fillStyle = '#000';
+                ctx.shadowBlur = 0;
+                const eyeOffset = 5;
+                const eyeX = player.x + Math.cos(baseAngle - 0.5) * eyeOffset;
+                const eyeY = player.y + Math.sin(baseAngle - 0.5) * eyeOffset;
+                ctx.beginPath();
+                ctx.arc(eyeX, eyeY, 3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Draw particles
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            ctx.globalAlpha = 1;
+            ctx.shadowBlur = 0;
+        }
+
+        function gameLoop(timestamp) {
+            const dt = Math.min((timestamp - lastTime) / 1000, 0.05);
+            lastTime = timestamp;
+
+            update(dt);
             draw();
+
+            if (gameRunning) {
+                animationId = requestAnimationFrame(gameLoop);
+            }
         }
 
         function startGame() {
-            score = 0; lives = 3; level = 1;
-            scoreEl.textContent = score;
-            livesEl.textContent = lives;
+            startScreen.classList.add('hidden');
+            gameOverScreen.classList.add('hidden');
+
+            lives = 5;
+            level = 1;
+            score = 0;
+            updateLivesDisplay();
             levelEl.textContent = level;
-            initLevel();
-            hideMsg();
-            gameState = 'playing';
-            gameStart = performance.now();
+            scoreEl.textContent = score;
+
+            resetPlayer();
+            spawnItems();
+
+            gameRunning = true;
             lastTime = performance.now();
-            moveTimer = 0; ghostTimer = 0;
-            animFrame = requestAnimationFrame(gameLoop);
+            animationId = requestAnimationFrame(gameLoop);
         }
 
-        // Controls
-        function setDir(d) { pac.nextDir = d; }
+        function restartGame() {
+            startGame();
+        }
+    
+        // === 手机触屏适配 ===
+        const dpadButtons = document.querySelectorAll('#dpad button');
+        const activeDirs = { up: false, down: false, left: false, right: false };
+        const dirToKey = { up: 'w', down: 's', left: 'a', right: 'd' };
 
-        document.addEventListener('keydown', e => {
-            if (e.key === 'ArrowUp' || e.key === 'w') setDir('up');
-            else if (e.key === 'ArrowDown' || e.key === 's') setDir('down');
-            else if (e.key === 'ArrowLeft' || e.key === 'a') setDir('left');
-            else if (e.key === 'ArrowRight' || e.key === 'd') setDir('right');
-            e.preventDefault();
-        });
+        dpadButtons.forEach(btn => {
+            const dir = btn.dataset.dir;
+            const key = dirToKey[dir];
 
-        // Touch D-pad
-        document.querySelectorAll('#dpad button').forEach(btn => {
-            btn.addEventListener('touchstart', e => {
+            btn.addEventListener('touchstart', (e) => {
                 e.preventDefault();
-                setDir(btn.dataset.dir);
+                activeDirs[dir] = true;
+                keys[key] = true;
             });
-            btn.addEventListener('mousedown', e => {
-                setDir(btn.dataset.dir);
+
+            btn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                activeDirs[dir] = false;
+                keys[key] = false;
+            });
+
+            btn.addEventListener('touchcancel', (e) => {
+                activeDirs[dir] = false;
+                keys[key] = false;
+            });
+
+            // 也支持鼠标点击
+            btn.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                keys[key] = true;
+            });
+            btn.addEventListener('mouseup', (e) => {
+                keys[key] = false;
+            });
+            btn.addEventListener('mouseleave', (e) => {
+                keys[key] = false;
             });
         });
 
-        // Swipe support
+        // 滑动支持
         let touchStartX = 0, touchStartY = 0;
-        canvas.addEventListener('touchstart', e => {
+        canvas.addEventListener('touchstart', (e) => {
             touchStartX = e.touches[0].clientX;
             touchStartY = e.touches[0].clientY;
         }, { passive: true });
-        canvas.addEventListener('touchend', e => {
+
+        canvas.addEventListener('touchend', (e) => {
             const dx = e.changedTouches[0].clientX - touchStartX;
             const dy = e.changedTouches[0].clientY - touchStartY;
+            const minSwipe = 20;
             if (Math.abs(dx) > Math.abs(dy)) {
-                setDir(dx > 0 ? 'right' : 'left');
+                if (Math.abs(dx) > minSwipe) {
+                    keys['arrowleft'] = dx < 0;
+                    keys['arrowright'] = dx > 0;
+                    setTimeout(() => { keys['arrowleft'] = false; keys['arrowright'] = false; }, 150);
+                }
             } else {
-                setDir(dy > 0 ? 'down' : 'up');
+                if (Math.abs(dy) > minSwipe) {
+                    keys['arrowup'] = dy < 0;
+                    keys['arrowdown'] = dy > 0;
+                    setTimeout(() => { keys['arrowup'] = false; keys['arrowdown'] = false; }, 150);
+                }
             }
         }, { passive: true });
 
-        startBtn.addEventListener('click', () => {
-            if (gameState === 'over') { score = 0; }
-            startGame();
-        });
+        // 防止滚动
+        document.body.addEventListener('touchmove', (e) => { e.preventDefault(); }, { passive: false });
 
-        // Init
-        gameState = 'idle';
-        initLevel();
-        draw();
-        showMsg('🟡 吃豆子大冒险\n吃豆子，躲幽灵！\n吃到大能量豆可以吃掉幽灵！', '开始游戏');
-    })();
     </script>
 </body>
 </html>
