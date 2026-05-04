@@ -108,21 +108,22 @@
             { emoji: '🦔', name: '尖刺刺猬', hp: 4, speed: 0.5, score: 35, size: 24, attack: 'spike', spikeRange: 50, spikeDmg: 1, spikeCooldown: 1.5 },
         ];
 
+        // === 初始化：只重置可变状态，level/wave 由外部控制 ===
         function init() {
             player = { x: W/2, y: H/2, size: 16, speed: 3*SCALE, dir: 'right', atkRange: 40*SCALE, atkActive: false, atkTimer: 0, atkDuration: 0.15, invincible: 0, animFrame: 0 };
             monsters = []; projectiles = []; particles = [];
-            hp = 5; maxHp = 5; score = 0;
+            hp = maxHp; // 使用当前 maxHp，不重置
             attackCooldown = 0; waveDelay = 0;
             gameRunning = false; gameOver = false;
             updateHUD(); spawnWave();
         }
 
-        function initGame() {
+        // === 全新开始：重置所有进度到 Level 1 ===
+        function resetGame() {
             level = 1; wave = 1;
             maxHp = 5; hp = 5;
             score = 0;
             player.size = 16; player.speed = 3*SCALE;
-            updateHUD();
         }
 
         function updateHUD() {
@@ -132,11 +133,21 @@
             waveEl.textContent = wave;
         }
 
-        function showMessage(text) {
+        // === 显示 overlay 消息（不干扰游戏运行）===
+        function showOverlayMessage(text, showBtn) {
             overlayTitle.textContent = text;
             overlayDesc.textContent = ''; overlayDesc2.textContent = '';
-            overlayBtn.classList.add('hidden'); overlay.classList.remove('hidden');
-            setTimeout(() => { if (gameRunning) overlay.classList.add('hidden'); }, 1200);
+            if (showBtn) {
+                overlayBtn.classList.remove('hidden');
+            } else {
+                overlayBtn.classList.add('hidden');
+            }
+            overlay.classList.remove('hidden');
+        }
+
+        // === 隐藏 overlay ===
+        function hideOverlay() {
+            overlay.classList.add('hidden');
         }
 
         function spawnWave() {
@@ -176,7 +187,7 @@
                     spikeTimer: 0,
                 });
             }
-            showMessage('🌊 第 ' + wave + ' 波怪兽来了！');
+            updateHUD();
         }
 
         function spawnParticles(x, y, color, count) {
@@ -199,7 +210,7 @@
                 gameOver = true; gameRunning = false;
                 overlayTitle.textContent = '💀 被打败了！';
                 overlayDesc.textContent = '最终得分: ' + score;
-                overlayDesc2.textContent = '坚持到了第 ' + wave + ' 波！';
+                overlayDesc2.textContent = '坚持到了第 ' + level + ' 关，第 ' + wave + ' 波！';
                 overlayBtn.textContent = '再来一次';
                 overlayBtn.classList.remove('hidden');
                 overlay.classList.remove('hidden');
@@ -427,17 +438,33 @@
             if (gameRunning) requestAnimationFrame(gameLoop);
         }
 
+        // === 开始游戏（首次开始 or 再来一次）===
         function startGame() {
+            resetGame(); // 重置到 Level 1
+            init();
             overlay.classList.add('hidden');
-            init(); gameRunning = true; gameOver = false;
+            gameRunning = true; gameOver = false;
             lastTime = performance.now();
             requestAnimationFrame(gameLoop);
         }
 
-        overlayBtn.addEventListener('click', startGame);
-        overlayBtn.addEventListener('touchend', e => { e.preventDefault(); startGame(); });
+        // === 点击 overlay 按钮：根据上下文区分首次开始 vs 下一关 ===
+        overlayBtn.addEventListener('click', function() {
+            if (gameOver || !gameRunning) {
+                // Game Over 或者还没开始 → 重新开始
+                startGame();
+            } else {
+                // 游戏中途暂停后点击 → 继续当前进度（不重置）
+                overlay.classList.add('hidden');
+            }
+        });
+        overlayBtn.addEventListener('touchend', e => { e.preventDefault(); overlayBtn.click(); });
 
-        init(); level = 1; wave = 1; draw();
+        // 页面初始化
+        level = 1; wave = 1; maxHp = 5; hp = 5; score = 0;
+        init();
+        updateHUD();
+        draw();
     })();
     </script>
 </body>
