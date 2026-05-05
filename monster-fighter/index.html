@@ -29,7 +29,7 @@
         #dpad button:active { background: rgba(255,68,68,0.5); }
         #dpad .up { top: 0; left: 53px; } #dpad .down { bottom: 0; left: 53px; }
         #dpad .left { top: 53px; left: 0; } #dpad .right { top: 53px; right: 0; }
-        #atk-btn { display: none; position: fixed; bottom: 30px; right: 30px; width: 72px; height: 72px; border-radius: 50%; border: 3px solid rgba(255,255,0,0.6); background: rgba(255,255,0,0.2); color: #ff0; font-size: 28px; font-weight: bold; cursor: pointer; z-index: 100; display: none; align-items: center; justify-content: center; }
+        #atk-btn { display: none; position: fixed; bottom: 30px; right: 30px; width: 72px; height: 72px; border-radius: 50%; border: 3px solid rgba(255,255,0,0.6); background: rgba(255,255,0,0.2); color: #ff0; font-size: 28px; font-weight: bold; cursor: pointer; z-index: 100; align-items: center; justify-content: center; }
         #atk-btn:active { background: rgba(255,255,0,0.5); }
         @media (hover: none) and (pointer: coarse) { #dpad, #atk-btn { display: flex !important; } #hud { font-size: 13px; gap: 8px; } }
         @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
@@ -39,7 +39,7 @@
 <body>
     <div id="hud">
         <span>❤️ <span id="hp-bar">5/5</span></span>
-        <span>🗡️ <span id="level-display">Lv.1</span></span>
+        <span>🗡️ 第 <span id="level-display">1</span> 关</span>
         <span>🌊 第 <span id="wave-display">1</span> 波</span>
         <span>⭐ <span id="score-display">0</span></span>
     </div>
@@ -108,36 +108,37 @@
             { emoji: '🦔', name: '尖刺刺猬', hp: 4, speed: 0.5, score: 35, size: 24, attack: 'spike', spikeRange: 50, spikeDmg: 1, spikeCooldown: 1.5 },
         ];
 
-        // === 初始化：只重置可变状态，level/wave 由外部控制 ===
-        function init() {
-            player = { x: W/2, y: H/2, size: 16, speed: 3*SCALE, dir: 'right', atkRange: 40*SCALE, atkActive: false, atkTimer: 0, atkDuration: 0.15, invincible: 0, animFrame: 0 };
-            monsters = []; projectiles = []; particles = [];
-            hp = maxHp; // 使用当前 maxHp，不重置
-            attackCooldown = 0; waveDelay = 0;
-            gameRunning = false; gameOver = false;
-            updateHUD(); spawnWave();
-        }
-
-        // === 全新开始：重置所有进度到 Level 1 ===
-        function resetGame() {
-            level = 1; wave = 1;
-            maxHp = 5; hp = 5;
+        // === 重置所有游戏状态到初始值 ===
+        function resetAll() {
+            level = 1;
+            wave = 1;
+            maxHp = 5;
+            hp = 5;
             score = 0;
-            player.size = 16; player.speed = 3*SCALE;
+            waveDelay = 0;
+            attackCooldown = 0;
+            player = { x: W/2, y: H/2, size: 16, speed: 3*SCALE, dir: 'right', atkRange: 40*SCALE, atkActive: false, atkTimer: 0, atkDuration: 0.15, invincible: 0, animFrame: 0 };
+            monsters = [];
+            projectiles = [];
+            particles = [];
+            gameOver = false;
+            gameRunning = false;
         }
 
         function updateHUD() {
             hpEl.textContent = hp + '/' + maxHp;
             scoreEl.textContent = score;
-            levelEl.textContent = 'Lv.' + level;
+            levelEl.textContent = level;
             waveEl.textContent = wave;
         }
 
-        // === 显示 overlay 消息（不干扰游戏运行）===
-        function showOverlayMessage(text, showBtn) {
-            overlayTitle.textContent = text;
-            overlayDesc.textContent = ''; overlayDesc2.textContent = '';
-            if (showBtn) {
+        // === 显示 overlay ===
+        function showOverlay(title, desc1, desc2, btnText) {
+            overlayTitle.textContent = title;
+            overlayDesc.textContent = desc1 || '';
+            overlayDesc2.textContent = desc2 || '';
+            if (btnText) {
+                overlayBtn.textContent = btnText;
                 overlayBtn.classList.remove('hidden');
             } else {
                 overlayBtn.classList.add('hidden');
@@ -207,13 +208,9 @@
             canvas.classList.add('shake');
             setTimeout(() => canvas.classList.remove('shake'), 200);
             if (hp <= 0) {
-                gameOver = true; gameRunning = false;
-                overlayTitle.textContent = '💀 被打败了！';
-                overlayDesc.textContent = '最终得分: ' + score;
-                overlayDesc2.textContent = '坚持到了第 ' + level + ' 关，第 ' + wave + ' 波！';
-                overlayBtn.textContent = '再来一次';
-                overlayBtn.classList.remove('hidden');
-                overlay.classList.remove('hidden');
+                gameOver = true;
+                gameRunning = false;
+                showOverlay('💀 被打败了！', '最终得分: ' + score, '坚持到了第 ' + level + ' 关！', '再来一次');
             }
         }
 
@@ -308,7 +305,7 @@
                     }
                 }
 
-                // Spike attack - with cooldown!
+                // Spike attack
                 if (m.attack === 'spike') {
                     m.spikeTimer -= dt;
                     if (dist < m.size + m.spikeRange && m.spikeTimer <= 0) {
@@ -323,19 +320,24 @@
                 }
             }
 
-            // Wave complete check
-            if (monsters.length === 0 && gameRunning) {
+            // === 关卡完成检测 ===
+            if (monsters.length === 0) {
                 waveDelay += dt;
                 if (waveDelay > 1.5) {
-                    wave++;
+                    // 关卡完成！更新关卡数和波数
+                    level = level + 1;
+                    wave = wave + 1;
                     waveDelay = 0;
-                    level++;
+                    // 增强角色能力
                     player.size += 1*SCALE;
                     player.speed += 0.2*SCALE;
                     maxHp++;
                     hp = Math.min(hp+2, maxHp);
-                    spawnWave();
+                    // 更新 HUD 显示
                     updateHUD();
+                    // 显示关卡完成提示，让玩家确认后再进入下一关
+                    showOverlay('🎉 第 ' + (level-1) + ' 关通关！', '得分: ' + score, '下一关将更难，准备好了吗？', '进入第 ' + level + ' 关');
+                    gameRunning = false;
                 }
             }
 
@@ -434,35 +436,43 @@
         function gameLoop(ts) {
             const dt = Math.min((ts-lastTime)/1000, 0.05);
             lastTime = ts;
-            update(dt); draw();
-            if (gameRunning) requestAnimationFrame(gameLoop);
+            update(dt);
+            draw();
+            if (gameRunning && !gameOver) requestAnimationFrame(gameLoop);
         }
 
-        // === 开始游戏（首次开始 or 再来一次）===
+        // === 开始游戏 / 重新开始 ===
         function startGame() {
-            resetGame(); // 重置到 Level 1
-            init();
-            overlay.classList.add('hidden');
-            gameRunning = true; gameOver = false;
+            resetAll();
+            hideOverlay();
+            gameRunning = true;
+            spawnWave();
             lastTime = performance.now();
             requestAnimationFrame(gameLoop);
         }
 
-        // === 点击 overlay 按钮：根据上下文区分首次开始 vs 下一关 ===
+        // === 继续下一关（通关后点击） ===
+        function nextLevel() {
+            hideOverlay();
+            gameRunning = true;
+            spawnWave();
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // === 按钮点击处理 ===
         overlayBtn.addEventListener('click', function() {
             if (gameOver || !gameRunning) {
-                // Game Over 或者还没开始 → 重新开始
                 startGame();
             } else {
-                // 游戏中途暂停后点击 → 继续当前进度（不重置）
-                overlay.classList.add('hidden');
+                // 通关后继续下一关
+                nextLevel();
             }
         });
         overlayBtn.addEventListener('touchend', e => { e.preventDefault(); overlayBtn.click(); });
 
         // 页面初始化
-        level = 1; wave = 1; maxHp = 5; hp = 5; score = 0;
-        init();
+        resetAll();
         updateHUD();
         draw();
     })();
