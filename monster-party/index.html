@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Leo 怪兽派对 🎉</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: linear-gradient(135deg, #1a0533, #2d1b69, #1a0533);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            min-height: 100vh; min-height: 100dvh;
+            font-family: 'Arial', sans-serif; color: #fff;
+            overflow: hidden; touch-action: none;
+            -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+        }
+        #hud { display: flex; gap: 12px; padding: 8px 12px; font-size: 15px; max-width: 560px; width: 100%; justify-content: space-around; z-index: 10; }
+        #hud span { font-weight: bold; text-shadow: 0 0 10px rgba(255,255,255,0.3); }
+        canvas { display: block; border-radius: 12px; max-width: 100vw; max-height: 65vh; max-height: 65dvh; box-shadow: 0 0 30px rgba(138, 43, 226, 0.4); }
+        #overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background: rgba(0,0,0,0.88); z-index: 20; backdrop-filter: blur(5px); }
+        #overlay.hidden { display: none; }
+        #overlay h2 { font-size: 36px; margin-bottom: 8px; text-shadow: 0 0 20px #ff69b4; }
+        #overlay .subtitle { font-size: 18px; margin-bottom: 12px; color: #ffb6c1; }
+        #overlay p { font-size: 15px; margin: 4px 0; color: #ccc; }
+        #overlay .hint { font-size: 13px; color: #888; margin-top: 8px; }
+        .btn { margin-top: 24px; padding: 14px 48px; font-size: 22px; background: linear-gradient(135deg, #ff69b4, #ff1493); color: #fff; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(255,20,147,0.4); transition: transform 0.1s; }
+        .btn:active { transform: scale(0.95); }
+        #monster-wants { position: fixed; top: 50px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 5; flex-wrap: wrap; justify-content: center; max-width: 95vw; }
+        .want-bubble { background: rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 10px; font-size: 14px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.2); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+        @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+        .shake { animation: shake 0.2s; }
+        @keyframes confetti-fall { 0%{transform:translateY(-100vh) rotate(0deg);opacity:1} 100%{transform:translateY(100vh) rotate(720deg);opacity:0} }
+        .confetti { position: fixed; width: 10px; height: 10px; top: -10px; animation: confetti-fall linear forwards; z-index: 15; pointer-events: none; }
+    </style>
+</head>
+<body>
+    <div id="hud">
+        <span>🎉 派对等级 <span id="level-display">1</span></span>
+        <span>⭐ <span id="score-display">0</span></span>
+        <span>🍽️ 接住 <span id="caught-display">0</span></span>
+        <span>💔 <span id="missed-display">0</span></span>
+    </div>
+    <canvas id="game"></canvas>
+    <div id="overlay">
+        <h2 id="overlay-title">🎉 怪兽派对</h2>
+        <p class="subtitle" id="overlay-sub">怪兽们饿了，快喂它们！</p>
+        <p id="overlay-desc">左右移动盘子，接住怪兽想吃的食物</p>
+        <p id="overlay-desc2">接对得分，接错扣分！</p>
+        <p class="hint" id="overlay-hint">键盘 ← → 或 触屏拖动盘子</p>
+        <button class="btn" id="overlay-btn">🎊 开始派对</button>
+    </div>
+    <script>
+    (function(){
+        const canvas = document.getElementById('game');
+        const ctx = canvas.getContext('2d');
+        const overlay = document.getElementById('overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlaySub = document.getElementById('overlay-sub');
+        const overlayDesc = document.getElementById('overlay-desc');
+        const overlayDesc2 = document.getElementById('overlay-desc2');
+        const overlayHint = document.getElementById('overlay-hint');
+        const overlayBtn = document.getElementById('overlay-btn');
+        const scoreEl = document.getElementById('score-display');
+        const levelEl = document.getElementById('level-display');
+        const caughtEl = document.getElementById('caught-display');
+        const missedEl = document.getElementById('missed-display');
+
+        let W, H, SCALE;
+        function resize() {
+            const maxW = Math.min(window.innerWidth - 8, 560);
+            const maxH = Math.min(window.innerHeight * 0.62, 450);
+            W = Math.floor(maxW); H = Math.floor(maxH);
+            canvas.width = W; canvas.height = H;
+            SCALE = W / 560;
+            if (plate) { plate.y = H - 40 * SCALE; plate.w = 80 * SCALE; }
+        }
+
+        // === 怪兽客人（每种怪兽爱吃的食物不同）===
+        const MONSTER_GUESTS = [
+            { emoji: '👾', name: '小怪兽', loves: '🍕', hates: '🥦' },
+            { emoji: '👹', name: '红恶魔', loves: '🌶️', hates: '🍦' },
+            { emoji: '🐉', name: '小龙', loves: '🍖', hates: '🥬' },
+            { emoji: '🦇', name: '小蝙蝠', loves: '🍒', hates: '🧄' },
+            { emoji: '👻', name: '小幽灵', loves: '🍬', hates: '🧅' },
+            { emoji: '🦄', name: '独角兽', loves: '🍰', hates: '🥕' },
+            { emoji: '🐙', name: '小章鱼', loves: '🍤', hates: '🍋' },
+            { emoji: '🤖', name: '小机器人', loves: '🔋', hates: '💧' },
+        ];
+
+        // 所有可能的食物
+        const ALL_FOODS = ['🍕', '🍔', '🌭', '🍟', '🍗', '🍖', '🍤', '🍩', '🍰', '🧁', '🍬', '🍭', '🍒', '🍓', '🌶️', '🔋'];
+
+        let plate, foods, particles, score, level, caught, missed, gameRunning, gameOver, maxMissed;
+        let spawnTimer, levelTimer, activeGuests, combo, comboTimer;
+        let touchX = null;
+        let stars = [];
+
+        // 背景星星
+        function initStars() {
+            stars = [];
+            for (let i = 0; i < 30; i++) {
+                stars.push({ x: Math.random() * 560, y: Math.random() * 450, size: Math.random() * 2 + 1, twinkle: Math.random() * Math.PI * 2 });
+            }
+        }
+
+        function resetAll() {
+            level = 1; score = 0; caught = 0; missed = 0; maxMissed = 10;
+            combo = 0; comboTimer = 0;
+            spawnTimer = 0; levelTimer = 0;
+            foods = []; particles = [];
+            gameOver = false; gameRunning = false;
+            plate = { x: W / 2, y: H - 40 * SCALE, w: 80 * SCALE, h: 20 * SCALE, speed: 7 * SCALE, targetX: W / 2 };
+            activeGuests = [MONSTER_GUESTS[0], MONSTER_GUESTS[1]];
+            initStars();
+            updateHUD();
+        }
+
+        function updateHUD() {
+            scoreEl.textContent = score;
+            levelEl.textContent = level;
+            caughtEl.textContent = caught;
+            missedEl.textContent = missed + '/' + maxMissed;
+        }
+
+        function showOverlay(title, sub, desc1, desc2, hint, btnText) {
+            overlayTitle.textContent = title || '';
+            overlaySub.textContent = sub || '';
+            overlayDesc.textContent = desc1 || '';
+            overlayDesc2.textContent = desc2 || '';
+            overlayHint.textContent = hint || '';
+            if (btnText) {
+                overlayBtn.textContent = btnText;
+                overlayBtn.style.display = '';
+            } else {
+                overlayBtn.style.display = 'none';
+            }
+            overlay.classList.remove('hidden');
+        }
+
+        function hideOverlay() { overlay.classList.add('hidden'); }
+
+        // 添加食物下落
+        function spawnFood() {
+            // 决定掉落的食物：70%概率是某个怪兽爱吃的，30%是随机的（可能是讨厌的）
+            let food;
+            if (Math.random() < 0.7) {
+                const guest = activeGuests[Math.floor(Math.random() * activeGuests.length)];
+                food = guest.loves;
+            } else {
+                // 随机选一个可能是某个怪兽讨厌的食物
+                const guest = activeGuests[Math.floor(Math.random() * activeGuests.length)];
+                if (Math.random() < 0.5) {
+                    food = guest.hates;
+                } else {
+                    food = ALL_FOODS[Math.floor(Math.random() * ALL_FOODS.length)];
+                }
+            }
+
+            const baseSpeed = 1.5 + level * 0.3;
+            foods.push({
+                x: Math.random() * (W - 40 * SCALE) + 20 * SCALE,
+                y: -20,
+                size: 22 * SCALE,
+                emoji: food,
+                speed: (baseSpeed + Math.random() * 0.8) * SCALE,
+                rotation: 0,
+                rotSpeed: (Math.random() - 0.5) * 4,
+            });
+        }
+
+        // 判断食物是否是当前怪兽爱吃的
+        function isLovedFood(foodEmoji) {
+            return activeGuests.some(g => g.loves === foodEmoji);
+        }
+
+        function isHatedFood(foodEmoji) {
+            return activeGuests.some(g => g.hates === foodEmoji);
+        }
+
+        function getGuestForFood(foodEmoji) {
+            return activeGuests.find(g => g.loves === foodEmoji);
+        }
+
+        // 粒子效果
+        function spawnParticles(x, y, color, count, emoji) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = (Math.random() * 4 + 2) * SCALE;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed - 2 * SCALE,
+                    life: 1,
+                    color,
+                    size: (Math.random() * 5 + 2) * SCALE,
+                    emoji: emoji || null,
+                });
+            }
+        }
+
+        // 彩带效果
+        function spawnConfetti() {
+            const colors = ['#ff69b4', '#ffd700', '#00ff7f', '#ff4500', '#1e90ff', '#ff1493'];
+            for (let i = 0; i < 30; i++) {
+                const el = document.createElement('div');
+                el.className = 'confetti';
+                el.style.left = Math.random() * 100 + 'vw';
+                el.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                el.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+                el.style.width = (Math.random() * 8 + 6) + 'px';
+                el.style.height = (Math.random() * 8 + 6) + 'px';
+                el.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                document.body.appendChild(el);
+                setTimeout(() => el.remove(), 4000);
+            }
+        }
+
+        function playerHitFood(food, isGood) {
+            const guest = getGuestForFood(food.emoji);
+            if (isGood) {
+                combo++;
+                comboTimer = 2;
+                const comboBonus = combo > 1 ? combo : 1;
+                score += 10 * comboBonus;
+                caught++;
+                spawnParticles(food.x, food.y, '#00ff7f', 8, guest ? guest.emoji : '⭐');
+                if (combo >= 3) {
+                    spawnParticles(food.x, food.y - 20, '#ffd700', 5, '🔥');
+                }
+            } else {
+                combo = 0;
+                score = Math.max(0, score - 5);
+                missed++;
+                spawnParticles(food.x, food.y, '#ff4444', 6, '💔');
+                canvas.classList.add('shake');
+                setTimeout(() => canvas.classList.remove('shake'), 200);
+            }
+            updateHUD();
+        }
+
+        function update(dt) {
+            if (!gameRunning || gameOver) return;
+
+            // 连击计时
+            if (comboTimer > 0) {
+                comboTimer -= dt;
+                if (comboTimer <= 0) combo = 0;
+            }
+
+            // 盘子移动
+            if (touchX !== null) {
+                plate.targetX = touchX;
+            }
+            const plateDiff = plate.targetX - plate.x;
+            plate.x += plateDiff * 0.15;
+            plate.x = Math.max(plate.w / 2, Math.min(W - plate.w / 2, plate.x));
+
+            // 生成食物
+            const spawnInterval = Math.max(0.4, 1.2 - level * 0.1);
+            spawnTimer += dt;
+            if (spawnTimer >= spawnInterval) {
+                spawnTimer = 0;
+                spawnFood();
+                // 高等级同时掉多个
+                if (level >= 3 && Math.random() < 0.3) spawnFood();
+                if (level >= 5 && Math.random() < 0.3) spawnFood();
+            }
+
+            // 更新食物
+            for (let i = foods.length - 1; i >= 0; i--) {
+                const f = foods[i];
+                f.y += f.speed * 60 * dt;
+                f.rotation += f.rotSpeed * dt;
+
+                // 检测是否被盘子接住
+                const plateLeft = plate.x - plate.w / 2;
+                const plateRight = plate.x + plate.w / 2;
+                const plateTop = plate.y - plate.h / 2;
+                if (f.y + f.size / 2 >= plateTop && f.y - f.size / 2 <= plate.y + plate.h / 2 &&
+                    f.x >= plateLeft - f.size / 2 && f.x <= plateRight + f.size / 2) {
+                    const good = isLovedFood(f.emoji);
+                    playerHitFood(f, good);
+                    foods.splice(i, 1);
+                    continue;
+                }
+
+                // 掉出屏幕
+                if (f.y > H + 30) {
+                    // 如果是爱吃的食物没接住，扣分+增加missed
+                    if (isLovedFood(f.emoji)) {
+                        score = Math.max(0, score - 3);
+                        missed++;
+                        updateHUD();
+                        if (missed >= maxMissed) {
+                            gameOver = true;
+                            gameRunning = false;
+                            spawnConfetti();
+                            showOverlay('🎊 派对结束！', '最终得分: ' + score + ' 分', '接住了 ' + caught + ' 个食物', '达到了第 ' + level + ' 关', '再来一次！🎮', '🎉 再玩一次');
+                        }
+                    }
+                    foods.splice(i, 1);
+                }
+            }
+
+            // 更新粒子
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.15 * SCALE; // 重力
+                p.life -= dt * 1.5;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            // 关卡升级
+            levelTimer += dt;
+            if (levelTimer >= 20) { // 每20秒升一级
+                levelTimer = 0;
+                level++;
+                // 增加新怪兽客人
+                if (level <= MONSTER_GUESTS.length) {
+                    activeGuests.push(MONSTER_GUESTS[level - 1]);
+                }
+                // 盘子变宽一点
+                plate.w = Math.min(120 * SCALE, plate.w + 5 * SCALE);
+                updateHUD();
+                // 升级特效
+                spawnParticles(W / 2, H / 2, '#ffd700', 15, '🎉');
+                spawnConfetti();
+            }
+        }
+
+        function draw() {
+            // 背景
+            ctx.fillStyle = '#1a0533';
+            ctx.fillRect(0, 0, W, H);
+
+            // 星星
+            const time = Date.now() / 1000;
+            for (const s of stars) {
+                const alpha = 0.3 + 0.7 * Math.abs(Math.sin(time + s.twinkle));
+                ctx.fillStyle = `rgba(255,255,255,${alpha})`;
+                ctx.beginPath();
+                ctx.arc(s.x * SCALE, s.y * SCALE, s.size * SCALE, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 装饰：派对彩旗
+            ctx.font = `${16 * SCALE}px Arial`;
+            ctx.textAlign = 'center';
+            for (let i = 0; i < 5; i++) {
+                const flagX = (W / 6) * (i + 0.5);
+                const flagY = 15 * SCALE + Math.sin(time * 2 + i) * 3 * SCALE;
+                ctx.fillText('🎈', flagX, flagY);
+            }
+
+            // 显示当前怪兽客人和它们想吃的食物
+            if (gameRunning) {
+                const bubbleY = 25 * SCALE;
+                ctx.font = `${14 * SCALE}px Arial`;
+                const totalWidth = activeGuests.length * 65 * SCALE;
+                let startX = (W - totalWidth) / 2;
+                for (let i = 0; i < activeGuests.length; i++) {
+                    const g = activeGuests[i];
+                    const gx = startX + i * 65 * SCALE + 30 * SCALE;
+                    ctx.fillText(g.emoji + g.loves, gx, bubbleY);
+                }
+            }
+
+            // 盘子
+            if (gameRunning || gameOver) {
+                ctx.save();
+                ctx.translate(plate.x, plate.y);
+                // 盘子阴影
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                ctx.beginPath();
+                ctx.ellipse(2 * SCALE, 3 * SCALE, plate.w / 2 + 2, plate.h / 2 + 1, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // 盘子本体
+                ctx.fillStyle = '#e8e8e8';
+                ctx.beginPath();
+                ctx.ellipse(0, 0, plate.w / 2, plate.h / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#bbb';
+                ctx.lineWidth = 2 * SCALE;
+                ctx.stroke();
+                // 盘子高光
+                ctx.fillStyle = 'rgba(255,255,255,0.5)';
+                ctx.beginPath();
+                ctx.ellipse(-plate.w * 0.15, -plate.h * 0.15, plate.w * 0.25, plate.h * 0.2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            // 食物
+            for (const f of foods) {
+                ctx.save();
+                ctx.translate(f.x, f.y);
+                ctx.rotate(f.rotation);
+                ctx.font = `${f.size * 2}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // 发光效果
+                if (isLovedFood(f.emoji)) {
+                    ctx.shadowColor = '#00ff7f';
+                    ctx.shadowBlur = 15 * SCALE;
+                } else if (isHatedFood(f.emoji)) {
+                    ctx.shadowColor = '#ff4444';
+                    ctx.shadowBlur = 10 * SCALE;
+                }
+                ctx.fillText(f.emoji, 0, 0);
+                ctx.shadowBlur = 0;
+                ctx.restore();
+            }
+
+            // 粒子
+            for (const p of particles) {
+                ctx.globalAlpha = Math.max(0, p.life);
+                if (p.emoji) {
+                    ctx.font = `${p.size * 2}px Arial`;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(p.emoji, p.x, p.y);
+                } else {
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+            ctx.globalAlpha = 1;
+
+            // 连击显示
+            if (combo >= 2 && gameRunning) {
+                ctx.save();
+                ctx.font = `bold ${20 * SCALE}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillStyle = `rgba(255,215,0,${0.7 + 0.3 * Math.sin(time * 5)})`;
+                ctx.shadowColor = '#ffd700';
+                ctx.shadowBlur = 15;
+                ctx.fillText(`🔥 ${combo}连击！`, W / 2, H / 2);
+                ctx.restore();
+            }
+
+            // Missed 警告条
+            if (gameRunning && missed > 0) {
+                const barW = W * 0.6;
+                const barH = 6 * SCALE;
+                const barX = (W - barW) / 2;
+                const barY = H - 10 * SCALE;
+                ctx.fillStyle = 'rgba(255,255,255,0.1)';
+                ctx.fillRect(barX, barY, barW, barH);
+                const ratio = missed / maxMissed;
+                ctx.fillStyle = ratio > 0.7 ? '#ff4444' : ratio > 0.4 ? '#ffaa00' : '#00ff7f';
+                ctx.fillRect(barX, barY, barW * ratio, barH);
+            }
+        }
+
+        let lastTime = 0;
+        function gameLoop(ts) {
+            const dt = Math.min((ts - lastTime) / 1000, 0.05);
+            lastTime = ts;
+            update(dt);
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function startGame() {
+            resetAll();
+            hideOverlay();
+            gameRunning = true;
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // 按钮
+        overlayBtn.addEventListener('click', () => {
+            if (gameOver || !gameRunning) {
+                startGame();
+            }
+        });
+        overlayBtn.addEventListener('touchend', e => { e.preventDefault(); overlayBtn.click(); });
+
+        // 键盘控制
+        const keys = {};
+        document.addEventListener('keydown', e => {
+            keys[e.key] = true;
+            if (['ArrowLeft', 'ArrowRight', ' '].includes(e.key)) e.preventDefault();
+        });
+        document.addEventListener('keyup', e => { keys[e.key] = false; });
+
+        // 触屏/鼠标控制
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            return (clientX - rect.left) * (W / rect.width);
+        }
+
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); touchX = getPos(e); }, { passive: false });
+        canvas.addEventListener('touchmove', e => { e.preventDefault(); touchX = getPos(e); }, { passive: false });
+        canvas.addEventListener('touchend', e => { touchX = null; });
+        canvas.addEventListener('mousemove', e => { if (e.buttons === 1) touchX = getPos(e); });
+        canvas.addEventListener('mousedown', e => { touchX = getPos(e); });
+        canvas.addEventListener('mouseup', () => { touchX = null; });
+
+        // 更新盘子位置（键盘）
+        function updatePlateFromKeys() {
+            if (keys['ArrowLeft'] || keys['a']) {
+                plate.targetX = plate.x - plate.speed * 3;
+            }
+            if (keys['ArrowRight'] || keys['d']) {
+                plate.targetX = plate.x + plate.speed * 3;
+            }
+        }
+
+        // 覆盖update中的盘子移动，加入键盘支持
+        const origUpdate = update;
+        // 在gameLoop中调用updatePlateFromKeys
+
+        // 修改gameLoop
+        function gameLoopWithKeys(ts) {
+            const dt = Math.min((ts - lastTime) / 1000, 0.05);
+            lastTime = ts;
+            if (gameRunning && !gameOver) {
+                updatePlateFromKeys();
+            }
+            update(dt);
+            draw();
+            requestAnimationFrame(gameLoopWithKeys);
+        }
+
+        // 覆盖startGame使用新的loop
+        const origStartGame = startGame;
+        // 重新定义startGame
+        // 实际上我们需要修改，但最简单的方式是直接修改gameLoop引用
+        // 让我们用另一种方式：在update函数里处理键盘
+
+        // 实际上让我重新组织代码 - 在update里加入键盘处理
+        // 由于已经写了很多，我们用最简单的方式：修改plate.targetX在update之前
+        // 我们已经定义了gameLoopWithKeys，只需要确保startGame使用它
+
+        // 最简单的方案：直接在update函数中处理键盘
+        // 由于update已经定义，我们重新赋值
+        const originalUpdate = update;
+
+        // 重新实现包含键盘的update
+        // 实际上最好的方式是修改update函数本身
+        // 但由于闭包已经形成，我们换个方式
+
+        // 方案：在gameLoop中直接处理
+        // 我们已经有gameLoopWithKeys了，只需要让startGame调用它
+
+        // 最终方案：覆盖startGame
+        startGame = function() {
+            resetAll();
+            hideOverlay();
+            gameRunning = true;
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoopWithKeys);
+        };
+
+        // 初始化
+        resize();
+        window.addEventListener('resize', resize);
+        resetAll();
+        draw();
+
+        // 检查是否是结束画面需要重新开始
+        function checkRestart() {
+            if (gameOver) {
+                startGame();
+            }
+        }
+
+    })();
+    </script>
+</body>
+</html>
