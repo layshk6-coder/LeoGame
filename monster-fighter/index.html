@@ -462,10 +462,11 @@
 
         // === 按钮点击处理 ===
         overlayBtn.addEventListener('click', function() {
-            if (gameOver || !gameRunning) {
+            if (gameOver) {
+                // Game Over → 重新开始
                 startGame();
             } else {
-                // 通关后继续下一关
+                // 通关后继续下一关（gameRunning=false 但 gameOver=false）
                 nextLevel();
             }
         });
