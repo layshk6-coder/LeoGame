@@ -91,6 +91,7 @@
 
         // 所有可能的食物
         const ALL_FOODS = ['🍕', '🍔', '🌭', '🍟', '🍗', '🍖', '🍤', '🍩', '🍰', '🧁', '🍬', '🍭', '🍒', '🍓', '🌶️', '🔋'];
+        const BOMB_EMOJI = '💣';
 
         let plate, foods, particles, score, level, caught, missed, gameRunning, gameOver, maxMissed;
         let spawnTimer, levelTimer, activeGuests, combo, comboTimer;
@@ -143,9 +144,12 @@
 
         // 添加食物下落
         function spawnFood() {
-            // 决定掉落的食物：70%概率是某个怪兽爱吃的，30%是随机的（可能是讨厌的）
+            // 决定掉落的食物：8%概率是炸弹，剩余概率中70%是某个怪兽爱吃的，30%是随机的（可能是讨厌的）
             let food;
-            if (Math.random() < 0.7) {
+            const bombChance = Math.min(0.05 + level * 0.01, 0.12); // 炸弹概率随等级提升，最高12%
+            if (Math.random() < bombChance) {
+                food = BOMB_EMOJI;
+            } else if (Math.random() < 0.7) {
                 const guest = activeGuests[Math.floor(Math.random() * activeGuests.length)];
                 food = guest.loves;
             } else {
@@ -240,6 +244,25 @@
             updateHUD();
         }
 
+        function playerHitBomb(bomb) {
+            combo = 0;
+            score = Math.max(0, score - 15);
+            missed = Math.min(missed + 2, maxMissed);
+            // 爆炸粒子效果
+            spawnParticles(bomb.x, bomb.y, '#ff6600', 12, '💥');
+            spawnParticles(bomb.x, bomb.y, '#444444', 8, '💨');
+            // 强烈震动
+            canvas.classList.add('shake');
+            setTimeout(() => canvas.classList.remove('shake'), 400);
+            updateHUD();
+            if (missed >= maxMissed) {
+                gameOver = true;
+                gameRunning = false;
+                spawnConfetti();
+                showOverlay('🎊 派对结束！', '最终得分: ' + score + ' 分', '接住了 ' + caught + ' 个食物', '达到了第 ' + level + ' 关', '炸弹爆炸了！再来一次！🎮', '🎉 再玩一次');
+            }
+        }
+
         function update(dt) {
             if (!gameRunning || gameOver) return;
 
@@ -280,6 +303,11 @@
                 const plateTop = plate.y - plate.h / 2;
                 if (f.y + f.size / 2 >= plateTop && f.y - f.size / 2 <= plate.y + plate.h / 2 &&
                     f.x >= plateLeft - f.size / 2 && f.x <= plateRight + f.size / 2) {
+                    if (f.emoji === BOMB_EMOJI) {
+                        playerHitBomb(f);
+                        foods.splice(i, 1);
+                        continue;
+                    }
                     const good = isLovedFood(f.emoji);
                     playerHitFood(f, good);
                     foods.splice(i, 1);
@@ -403,7 +431,10 @@
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 // 发光效果
-                if (isLovedFood(f.emoji)) {
+                if (f.emoji === BOMB_EMOJI) {
+                    ctx.shadowColor = '#ff6600';
+                    ctx.shadowBlur = 20 * SCALE;
+                } else if (isLovedFood(f.emoji)) {
                     ctx.shadowColor = '#00ff7f';
                     ctx.shadowBlur = 15 * SCALE;
                 } else if (isHatedFood(f.emoji)) {
