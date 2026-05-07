@@ -24,6 +24,7 @@
         #overlay .subtitle { font-size: 18px; margin-bottom: 12px; color: #ffb6c1; }
         #overlay p { font-size: 15px; margin: 4px 0; color: #ccc; }
         #overlay .hint { font-size: 13px; color: #888; margin-top: 8px; }
+        #overlay .version { font-size: 12px; color: #666; margin-top: 6px; letter-spacing: 1px; }
         .btn { margin-top: 24px; padding: 14px 48px; font-size: 22px; background: linear-gradient(135deg, #ff69b4, #ff1493); color: #fff; border: none; border-radius: 30px; cursor: pointer; font-weight: bold; box-shadow: 0 4px 15px rgba(255,20,147,0.4); transition: transform 0.1s; }
         .btn:active { transform: scale(0.95); }
         #monster-wants { position: fixed; top: 50px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 5; flex-wrap: wrap; justify-content: center; max-width: 95vw; }
@@ -49,6 +50,7 @@
         <p id="overlay-desc">左右移动盘子，接住怪兽想吃的食物</p>
         <p id="overlay-desc2">接对得分，接错扣分！</p>
         <p class="hint" id="overlay-hint">键盘 ← → 或 触屏拖动盘子</p>
+        <p class="version">v1.1</p>
         <button class="btn" id="overlay-btn">🎊 开始派对</button>
     </div>
     <script>
@@ -438,8 +440,9 @@
                     ctx.shadowColor = '#00ff7f';
                     ctx.shadowBlur = 15 * SCALE;
                 } else if (isHatedFood(f.emoji)) {
-                    ctx.shadowColor = '#ff4444';
-                    ctx.shadowBlur = 10 * SCALE;
+                    const pulse = 20 + 15 * Math.abs(Math.sin(time * 5));
+                    ctx.shadowColor = '#ff2222';
+                    ctx.shadowBlur = pulse * SCALE;
                 }
                 ctx.fillText(f.emoji, 0, 0);
                 ctx.shadowBlur = 0;
