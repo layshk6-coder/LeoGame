@@ -32,7 +32,7 @@
             font-size: 18px;
             z-index: 5;
         }
-        #lives { color: #ff4444; font-size: 22px; }
+        #timer { font-size: 22px; font-weight: bold; color: #00d4ff; }
         #score { font-size: 24px; font-weight: bold; text-shadow: 0 0 10px #00d4ff; }
         #level { color: #aaa; }
         #gameCanvas {
@@ -44,6 +44,18 @@
             max-height: 70vh;
             max-height: 70dvh;
             cursor: crosshair;
+        }
+        #canvasWrap {
+            position: relative;
+        }
+        #effectOverlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border-radius: 10px;
+            pointer-events: none;
+            z-index: 2;
+            transition: box-shadow 0.3s;
         }
         #startScreen, #gameOverScreen {
             position: absolute;
@@ -86,21 +98,23 @@
 </head>
 <body>
     <div id="hud">
-        <div id="lives">❤❤❤</div>
+        <div id="timer">5:00</div>
         <div id="score">0</div>
         <div id="level">第 1 关</div>
     </div>
-    <div style="position: relative;">
+    <div id="canvasWrap">
         <canvas id="gameCanvas" width="800" height="600"></canvas>
+        <div id="effectOverlay"></div>
         <div id="message"></div>
         <div id="startScreen">
             <h1>🔪 切切乐</h1>
-            <p style="margin-top: 10px;">滑动手指或拖动鼠标来切水果！</p>
-            <p style="color: #ff4444; margin-top: 5px;">小心不要切到炸弹 💣</p>
+            <p style="margin-top: 10px;">限时 5 分钟，切水果得分，小心炸弹！</p>
+            <p style="color: #00d4ff; margin-top: 5px;">❄️ 冰冻道具：暂停倒计时</p>
+            <p style="color: #ffaa00; margin-top: 2px;">⚡ 狂欢道具：水果大爆发</p>
             <button class="btn" onclick="startGame()">开始游戏</button>
         </div>
         <div id="gameOverScreen" class="hidden">
-            <h2>游戏结束</h2>
+            <h2>时间到！</h2>
             <p style="margin-top: 10px;">最终得分: <span id="finalScore">0</span></p>
             <button class="btn" onclick="restartGame()">再来一局</button>
         </div>
@@ -109,23 +123,30 @@
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        const livesEl = document.getElementById('lives');
+        const timerEl = document.getElementById('timer');
         const scoreEl = document.getElementById('score');
         const levelEl = document.getElementById('level');
         const messageEl = document.getElementById('message');
         const startScreen = document.getElementById('startScreen');
         const gameOverScreen = document.getElementById('gameOverScreen');
         const finalScoreEl = document.getElementById('finalScore');
+        const effectOverlay = document.getElementById('effectOverlay');
 
         // Game state
         let gameRunning = false;
         let score = 0;
-        let lives = 3;
         let level = 1;
+        let timeLeft = 300;
         let animationId;
         let lastTime = 0;
         let spawnTimer = 0;
         let spawnInterval = 2.0;
+
+        // Power-up states
+        let isFrozen = false;
+        let freezeTimer = 0;
+        let isFrenzy = false;
+        let frenzyTimer = 0;
 
         // Entities
         let items = [];
@@ -142,23 +163,27 @@
         // Item types config
         const FRUIT_TYPES = ['apple', 'banana', 'watermelon', 'grape'];
         const ITEM_TYPES = {
-            apple: { emoji: '🍎', score: 10, radius: 30, color: '#ff4444', g: 900 },
-            banana: { emoji: '🍌', score: 10, radius: 30, color: '#ffdd00', g: 900 },
-            watermelon: { emoji: '🍉', score: 20, radius: 38, color: '#ff5555', g: 800 },
-            grape: { emoji: '🍇', score: 15, radius: 25, color: '#aa44ff', g: 950 },
-            star: { emoji: '⭐', score: 50, radius: 28, color: '#ffdd00', g: 850 },
-            bomb: { emoji: '💣', score: 0, radius: 32, color: '#333333', g: 1000 }
+            apple: { emoji: '🍎', score: 10, radius: 30, color: '#ff4444', g: 900, kind: 'fruit' },
+            banana: { emoji: '🍌', score: 10, radius: 30, color: '#ffdd00', g: 900, kind: 'fruit' },
+            watermelon: { emoji: '🍉', score: 20, radius: 38, color: '#ff5555', g: 800, kind: 'fruit' },
+            grape: { emoji: '🍇', score: 15, radius: 25, color: '#aa44ff', g: 950, kind: 'fruit' },
+            star: { emoji: '⭐', score: 50, radius: 28, color: '#ffdd00', g: 850, kind: 'fruit' },
+            bomb: { emoji: '💣', score: -100, radius: 32, color: '#333333', g: 1000, kind: 'bomb' },
+            freeze: { emoji: '❄️', score: 0, radius: 30, color: '#00d4ff', g: 900, kind: 'powerup', effect: 'freeze' },
+            frenzy: { emoji: '⚡', score: 0, radius: 30, color: '#ffaa00', g: 900, kind: 'powerup', effect: 'frenzy' }
         };
+
+        function formatTime(sec) {
+            const m = Math.floor(Math.max(0, sec) / 60);
+            const s = Math.floor(Math.max(0, sec) % 60);
+            return m + ':' + (s < 10 ? '0' + s : s);
+        }
 
         function showMessage(text, color) {
             messageEl.textContent = text;
             messageEl.style.color = color || '#fff';
             messageEl.classList.add('show');
             setTimeout(function() { messageEl.classList.remove('show'); }, 1500);
-        }
-
-        function updateLives() {
-            livesEl.textContent = '❤'.repeat(Math.max(0, lives));
         }
 
         function updateLevel() {
@@ -170,8 +195,10 @@
         function spawnItem() {
             const r = Math.random();
             let typeKey;
-            if (r < 0.05) typeKey = 'star';
-            else if (r < 0.20) typeKey = 'bomb';
+            if (r < 0.04) typeKey = 'star';
+            else if (r < 0.08) typeKey = 'freeze';
+            else if (r < 0.12) typeKey = 'frenzy';
+            else if (r < 0.25) typeKey = 'bomb';
             else typeKey = FRUIT_TYPES[Math.floor(Math.random() * FRUIT_TYPES.length)];
 
             const type = ITEM_TYPES[typeKey];
@@ -224,16 +251,27 @@
             item.sliced = true;
             item.active = false;
 
+            if (item.config.kind === 'powerup') {
+                if (item.config.effect === 'freeze') {
+                    isFrozen = true;
+                    freezeTimer = 10;
+                    showMessage('❄️ 冰冻时间！倒计时暂停10秒', '#00d4ff');
+                } else if (item.config.effect === 'frenzy') {
+                    isFrenzy = true;
+                    frenzyTimer = 10;
+                    showMessage('⚡ 水果狂欢！大量水果来袭', '#ffaa00');
+                }
+                createParticles(item.x, item.y, item.config.color, 15);
+                return;
+            }
+
             if (item.type === 'bomb') {
-                lives--;
-                updateLives();
+                score -= 100;
+                scoreEl.textContent = score;
                 screenShake = 0.3;
                 createParticles(item.x, item.y, '#ff4444', 40);
                 createParticles(item.x, item.y, '#ffaa00', 20);
-                showMessage('💥 炸弹！', '#ff4444');
-                if (lives <= 0) {
-                    gameOver();
-                }
+                showMessage('💥 炸弹！ -100', '#ff4444');
                 return;
             }
 
@@ -300,15 +338,41 @@
         function update(dt) {
             if (!gameRunning) return;
 
+            // Timer
+            if (!isFrozen) {
+                timeLeft -= dt;
+            }
+            if (timeLeft <= 0) {
+                timeLeft = 0;
+                gameOver();
+                return;
+            }
+            timerEl.textContent = formatTime(timeLeft);
+
+            // Power-up timers
+            if (isFrozen) {
+                freezeTimer -= dt;
+                if (freezeTimer <= 0) isFrozen = false;
+            }
+            if (isFrenzy) {
+                frenzyTimer -= dt;
+                if (frenzyTimer <= 0) isFrenzy = false;
+            }
+
+            // Spawn
             spawnTimer += dt;
-            if (spawnTimer >= spawnInterval) {
+            let interval = spawnInterval;
+            if (isFrenzy) interval = 0.3;
+            if (spawnTimer >= interval) {
                 spawnTimer = 0;
-                const count = Math.min(1 + Math.floor(level / 3), 4);
+                let count = Math.min(1 + Math.floor(level / 3), 4);
+                if (isFrenzy) count += 3;
                 for (let i = 0; i < count; i++) {
                     setTimeout(function() { spawnItem(); }, i * 150);
                 }
             }
 
+            // Items
             for (const item of items) {
                 if (!item.active) continue;
                 item.vy += item.config.g * dt;
@@ -321,6 +385,7 @@
             }
             items = items.filter(function(i) { return i.active; });
 
+            // Halves
             for (const h of halves) {
                 h.vy += 1000 * dt;
                 h.x += h.vx * dt;
@@ -330,6 +395,7 @@
             }
             halves = halves.filter(function(h) { return h.life > 0; });
 
+            // Particles
             for (const p of particles) {
                 p.vy += 500 * dt;
                 p.x += p.vx * dt;
@@ -338,18 +404,30 @@
             }
             particles = particles.filter(function(p) { return p.life > 0; });
 
+            // Float texts
             for (const t of floatTexts) {
                 t.y += t.vy * dt;
                 t.life -= dt;
             }
             floatTexts = floatTexts.filter(function(t) { return t.life > 0; });
 
+            // Trail decay
             for (const t of trail) {
                 t.life -= dt * 5;
             }
             trail = trail.filter(function(t) { return t.life > 0; });
 
+            // Screen shake
             if (screenShake > 0) screenShake -= dt;
+
+            // Effect overlay
+            if (isFrozen) {
+                effectOverlay.style.boxShadow = 'inset 0 0 60px rgba(0, 212, 255, 0.6)';
+            } else if (isFrenzy) {
+                effectOverlay.style.boxShadow = 'inset 0 0 60px rgba(255, 170, 0, 0.6)';
+            } else {
+                effectOverlay.style.boxShadow = 'none';
+            }
         }
 
         function draw() {
@@ -371,6 +449,7 @@
                 ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
             }
 
+            // Draw items
             for (const item of items) {
                 if (!item.active) continue;
                 ctx.save();
@@ -385,6 +464,7 @@
                 ctx.restore();
             }
 
+            // Draw halves
             for (const h of halves) {
                 ctx.save();
                 ctx.translate(h.x, h.y);
@@ -405,6 +485,7 @@
             }
             ctx.globalAlpha = 1;
 
+            // Draw particles
             for (const p of particles) {
                 ctx.globalAlpha = Math.max(0, p.life);
                 ctx.fillStyle = p.color;
@@ -414,6 +495,7 @@
             }
             ctx.globalAlpha = 1;
 
+            // Draw float texts
             for (const t of floatTexts) {
                 ctx.globalAlpha = Math.max(0, t.life);
                 ctx.fillStyle = t.color;
@@ -424,6 +506,27 @@
             }
             ctx.globalAlpha = 1;
 
+            // Draw status text on canvas
+            if (isFrozen) {
+                ctx.fillStyle = 'rgba(0, 212, 255, 0.9)';
+                ctx.font = 'bold 28px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillText('❄️ 冰冻时间！', canvas.width / 2, 10);
+                ctx.font = '18px Arial';
+                ctx.fillText('剩余 ' + Math.ceil(freezeTimer) + ' 秒', canvas.width / 2, 42);
+            }
+            if (isFrenzy) {
+                ctx.fillStyle = 'rgba(255, 170, 0, 0.9)';
+                ctx.font = 'bold 28px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'top';
+                ctx.fillText('⚡ 水果狂欢！', canvas.width / 2, 10);
+                ctx.font = '18px Arial';
+                ctx.fillText('剩余 ' + Math.ceil(frenzyTimer) + ' 秒', canvas.width / 2, 42);
+            }
+
+            // Draw trail
             if (trail.length > 1) {
                 ctx.lineCap = 'round';
                 ctx.lineJoin = 'round';
@@ -469,10 +572,14 @@
             startScreen.classList.add('hidden');
             gameOverScreen.classList.add('hidden');
             score = 0;
-            lives = 3;
             level = 1;
+            timeLeft = 300;
             spawnInterval = 2.0;
             spawnTimer = 0;
+            isFrozen = false;
+            freezeTimer = 0;
+            isFrenzy = false;
+            frenzyTimer = 0;
             items = [];
             halves = [];
             particles = [];
@@ -480,8 +587,9 @@
             trail = [];
             screenShake = 0;
             scoreEl.textContent = '0';
-            updateLives();
+            timerEl.textContent = '5:00';
             updateLevel();
+            effectOverlay.style.boxShadow = 'none';
             gameRunning = true;
             lastTime = performance.now();
             animationId = requestAnimationFrame(gameLoop);
@@ -492,6 +600,7 @@
             cancelAnimationFrame(animationId);
             finalScoreEl.textContent = score;
             gameOverScreen.classList.remove('hidden');
+            effectOverlay.style.boxShadow = 'none';
         }
 
         function restartGame() {
