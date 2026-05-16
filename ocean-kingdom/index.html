@@ -5,45 +5,109 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
   <title>海洋王国 Ocean Kingdom</title>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}html,body{height:100%;overflow:hidden;font-family:"Microsoft YaHei",Arial,sans-serif;background:#021526;color:white;touch-action:none}#game{position:relative;width:100vw;height:100vh;background:linear-gradient(#0cc5ff 0%,#0677c8 42%,#032a68 100%);overflow:hidden}.bubble{position:absolute;border:2px solid rgba(255,255,255,.55);border-radius:50%;animation:rise 7s linear infinite;opacity:.55}@keyframes rise{from{transform:translateY(110vh)}to{transform:translateY(-20vh)}}#hud{position:absolute;z-index:5;top:12px;left:12px;right:12px;display:flex;gap:8px;justify-content:space-between;align-items:center;pointer-events:none}.pill{background:rgba(0,30,70,.58);border:2px solid rgba(255,255,255,.35);border-radius:999px;padding:8px 12px;font-weight:900;text-shadow:0 2px 4px #003;box-shadow:0 6px 16px rgba(0,0,0,.18)}#player{position:absolute;z-index:3;width:54px;height:38px;filter:drop-shadow(0 8px 9px rgba(0,0,0,.28));transition:transform .08s}.fishBody{position:absolute;left:4px;top:4px;width:42px;height:28px;border-radius:60% 48% 48% 60%;background:linear-gradient(135deg,#ffd84d,#ff8c1a)}.fishTail{position:absolute;right:0;top:9px;width:0;height:0;border-top:10px solid transparent;border-bottom:10px solid transparent;border-left:17px solid #ff6b00}.fishEye{position:absolute;left:12px;top:10px;width:7px;height:7px;background:white;border-radius:50%;box-shadow:2px 1px 0 #111 inset}.thing{position:absolute;z-index:2;font-size:34px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 5px 6px rgba(0,0,0,.25));user-select:none}.pearl{animation:pulse 1.2s ease-in-out infinite alternate}.gold{animation:gold 1s ease-in-out infinite alternate}@keyframes pulse{to{transform:scale(1.15)}}@keyframes gold{to{transform:scale(1.25) rotate(10deg);filter:drop-shadow(0 0 12px #fff052)}}#boss{position:absolute;z-index:2;font-size:76px;display:none;filter:drop-shadow(0 8px 10px rgba(0,0,0,.35))}.shot{position:absolute;z-index:4;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff,#61efff 40%,#0aa8ff 75%);box-shadow:0 0 16px #bffcff}.panel{position:absolute;z-index:8;left:50%;top:50%;transform:translate(-50%,-50%);width:min(680px,92vw);background:rgba(1,22,58,.82);border:3px solid rgba(255,255,255,.45);border-radius:28px;padding:24px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.35);backdrop-filter:blur(10px)}.panel h1{font-size:clamp(32px,8vw,62px);margin-bottom:10px;text-shadow:0 0 20px #37e6ff}.panel p{font-size:clamp(16px,4vw,22px);line-height:1.65;margin:8px 0}.btn{display:inline-block;margin-top:16px;padding:14px 28px;border:0;border-radius:999px;background:linear-gradient(90deg,#ffe04b,#ff8c1a);font-size:22px;font-weight:900;color:#123;box-shadow:0 8px 0 #a85400;cursor:pointer}.btn:active{transform:translateY(5px);box-shadow:0 3px 0 #a85400}#controls{position:absolute;z-index:6;left:16px;bottom:18px;width:156px;height:156px;opacity:.9}.ctrl{position:absolute;width:52px;height:52px;border-radius:18px;background:rgba(255,255,255,.24);border:2px solid rgba(255,255,255,.45);color:white;font-size:25px;font-weight:900}.up{left:52px;top:0}.down{left:52px;bottom:0}.left{left:0;top:52px}.right{right:0;top:52px}#shoot{position:absolute;z-index:6;right:22px;bottom:38px;width:92px;height:92px;border-radius:50%;background:rgba(255,235,90,.88);border:4px solid rgba(255,255,255,.75);font-size:36px;box-shadow:0 8px 0 rgba(99,91,0,.7)}@media (min-width:900px){#controls,#shoot{opacity:.45}.pill{font-size:20px}}
+    *{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;overflow:hidden;font-family:"Microsoft YaHei",Arial,sans-serif;background:#021526;color:white;touch-action:none}
+    button{font-family:inherit}
+    #game{position:relative;width:100vw;height:100vh;background:linear-gradient(#0cc5ff 0%,#0677c8 42%,#032a68 100%);overflow:hidden}
+    #game:before{content:"";position:absolute;inset:0;background:radial-gradient(circle at 18% 20%,rgba(255,255,255,.28),transparent 9%),radial-gradient(circle at 80% 18%,rgba(255,255,255,.16),transparent 11%),linear-gradient(180deg,transparent 60%,rgba(0,21,60,.24));pointer-events:none}
+    .bubble{position:absolute;border:2px solid rgba(255,255,255,.55);border-radius:50%;animation:rise 7s linear infinite;opacity:.55}@keyframes rise{from{transform:translateY(110vh)}to{transform:translateY(-20vh)}}
+    #hud{position:absolute;z-index:5;top:12px;left:12px;right:12px;display:none;gap:8px;justify-content:space-between;align-items:center;pointer-events:none;flex-wrap:wrap}.pill{background:rgba(0,30,70,.62);border:2px solid rgba(255,255,255,.35);border-radius:999px;padding:8px 12px;font-weight:900;text-shadow:0 2px 4px #003;box-shadow:0 6px 16px rgba(0,0,0,.18);backdrop-filter:blur(6px)}
+    #missionMini{min-width:160px;text-align:center}
+    #player{position:absolute;z-index:3;width:54px;height:38px;filter:drop-shadow(0 8px 9px rgba(0,0,0,.28));transition:transform .08s;display:none}.fishBody{position:absolute;left:4px;top:4px;width:42px;height:28px;border-radius:60% 48% 48% 60%;background:linear-gradient(135deg,#ffd84d,#ff8c1a)}.fishTail{position:absolute;right:0;top:9px;width:0;height:0;border-top:10px solid transparent;border-bottom:10px solid transparent;border-left:17px solid #ff6b00}.fishEye{position:absolute;left:12px;top:10px;width:7px;height:7px;background:white;border-radius:50%;box-shadow:2px 1px 0 #111 inset}
+    .thing{position:absolute;z-index:2;font-size:34px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 5px 6px rgba(0,0,0,.25));user-select:none}.pearl{animation:pulse 1.2s ease-in-out infinite alternate}.gold{animation:gold 1s ease-in-out infinite alternate}@keyframes pulse{to{transform:scale(1.15)}}@keyframes gold{to{transform:scale(1.25) rotate(10deg);filter:drop-shadow(0 0 12px #fff052)}}
+    #boss{position:absolute;z-index:2;font-size:76px;display:none;filter:drop-shadow(0 8px 10px rgba(0,0,0,.35))}.shot{position:absolute;z-index:4;width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 30% 25%,white,#8ff4ff 45%,rgba(0,170,255,.25));border:2px solid rgba(255,255,255,.75);box-shadow:0 0 12px rgba(144,240,255,.9)}
+    .panel{position:absolute;z-index:10;left:50%;top:50%;transform:translate(-50%,-50%);width:min(92vw,620px);max-height:88vh;overflow:auto;text-align:center;background:rgba(0,38,88,.72);border:3px solid rgba(255,255,255,.48);border-radius:30px;padding:28px 22px;box-shadow:0 22px 60px rgba(0,0,0,.36), inset 0 0 30px rgba(255,255,255,.08);backdrop-filter:blur(10px)}
+    .panel h1{font-size:clamp(34px,7vw,64px);line-height:1.05;margin-bottom:10px;text-shadow:0 5px 0 rgba(0,52,120,.6),0 8px 18px rgba(0,0,0,.3)}.panel h2{font-size:clamp(26px,5vw,42px);margin-bottom:12px}.panel p{font-size:18px;line-height:1.6;margin:8px auto;max-width:520px;color:#e8fbff}.menuFish{font-size:74px;animation:swim 2s ease-in-out infinite alternate}@keyframes swim{to{transform:translateX(16px) rotate(6deg)}}
+    .btnRow{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:18px}.btn{border:0;border-radius:999px;padding:14px 24px;font-size:22px;font-weight:900;color:#06366b;background:linear-gradient(180deg,#fff47a,#ffbd2e);box-shadow:0 8px 0 #cf7800,0 14px 24px rgba(0,0,0,.25);cursor:pointer}.btn:active{transform:translateY(5px);box-shadow:0 3px 0 #cf7800,0 8px 16px rgba(0,0,0,.2)}.btn.secondary{background:linear-gradient(180deg,#dffbff,#73e0ff);box-shadow:0 8px 0 #1689bd,0 14px 24px rgba(0,0,0,.25);color:#04395b}.btn.ghost{background:rgba(255,255,255,.16);color:white;border:2px solid rgba(255,255,255,.55);box-shadow:none}
+    .taskList{display:grid;gap:12px;margin:16px auto 6px;max-width:540px;text-align:left}.task{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.24);border-radius:18px;padding:12px}.taskIcon{font-size:28px;width:38px;text-align:center}.taskText{flex:1}.taskText b{display:block;font-size:18px}.taskText span{display:block;color:#d2f7ff;margin-top:3px}.taskDone{font-size:28px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.25))}.task.done{background:rgba(92,255,168,.2);border-color:rgba(125,255,190,.75)}
+    #controls{position:absolute;z-index:6;left:18px;bottom:18px;width:160px;height:160px;display:none}.ctrl{position:absolute;width:58px;height:58px;border-radius:18px;border:2px solid rgba(255,255,255,.5);background:rgba(2,60,130,.62);color:white;font-size:25px;font-weight:900;box-shadow:0 7px 14px rgba(0,0,0,.25)}.up{left:51px;top:0}.left{left:0;top:51px}.right{right:0;top:51px}.down{left:51px;bottom:0}#shoot{position:absolute;right:28px;bottom:34px;z-index:6;width:82px;height:82px;border-radius:50%;border:3px solid rgba(255,255,255,.62);background:rgba(255,255,255,.24);font-size:36px;display:none;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+    #toast{position:absolute;z-index:12;left:50%;top:92px;transform:translateX(-50%);background:rgba(0,29,67,.82);border:2px solid rgba(255,255,255,.5);border-radius:999px;padding:10px 18px;font-size:18px;font-weight:900;display:none;box-shadow:0 10px 22px rgba(0,0,0,.25)}
+    .seaweed{position:absolute;bottom:-8px;font-size:52px;opacity:.8;filter:drop-shadow(0 5px 7px rgba(0,0,0,.25));z-index:1}.s1{left:5%;transform:rotate(-8deg)}.s2{left:28%;font-size:42px}.s3{right:12%;transform:rotate(7deg)}.s4{right:36%;font-size:48px}
+    @media (max-width:640px){#hud{font-size:13px}.pill{padding:7px 9px}.panel{padding:22px 14px;border-radius:24px}.btn{font-size:19px;padding:13px 19px}#controls{transform:scale(.9);transform-origin:left bottom}#shoot{right:18px;bottom:24px}}
   </style>
 </head>
 <body>
 <div id="game">
-  <div id="hud"><div class="pill">💎 珍珠 <span id="score">0</span></div><div class="pill">🌟 金珍珠 <span id="gold">0</span>/3</div><div class="pill">❤️ <span id="life">3</span></div></div>
+  <div id="hud"><div class="pill">💎 珍珠 <span id="score">0</span></div><div class="pill">🌟 金珍珠 <span id="gold">0</span>/3</div><div class="pill">❤️ <span id="life">3</span></div><div id="missionMini" class="pill">任务 0/4</div></div>
+  <div class="seaweed s1">🌿</div><div class="seaweed s2">🪸</div><div class="seaweed s3">🌿</div><div class="seaweed s4">🪸</div>
   <div id="player"><div class="fishBody"><div class="fishEye"></div></div><div class="fishTail"></div></div>
   <div id="boss">🐙</div>
-  <div id="start" class="panel"><h1>🌊 海洋王国 👑</h1><p>Leo 的小鱼勇士要收集珍珠，躲开水母和鲨鱼。</p><p>拿到 3 颗金珍珠后，大章鱼 Boss 会出现！按空格/泡泡键发射泡泡。</p><button class="btn" onclick="startGame()">开始冒险</button></div>
-  <div id="end" class="panel" style="display:none"><h1 id="endTitle">胜利！</h1><p id="endText"></p><button class="btn" onclick="startGame()">再玩一次</button></div>
+  <div id="toast"></div>
+
+  <div id="menu" class="panel">
+    <div class="menuFish">🐠</div>
+    <h1>🌊 海洋王国 👑</h1>
+    <p>欢迎来到 Leo 的海洋王国！小鱼勇士要收集珍珠、完成任务，最后用泡泡打败大章鱼。</p>
+    <div class="btnRow">
+      <button class="btn" onclick="startGame()">▶ 开始游戏</button>
+      <button class="btn secondary" onclick="showTasks()">📜 任务</button>
+    </div>
+  </div>
+
+  <div id="tasks" class="panel" style="display:none">
+    <h2>📜 海洋任务</h2>
+    <p>完成任务可以成为真正的海洋国王！</p>
+    <div class="taskList" id="taskList"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="startGame()">▶ 开始挑战</button>
+      <button class="btn ghost" onclick="showMenu()">返回主界面</button>
+    </div>
+  </div>
+
+  <div id="end" class="panel" style="display:none">
+    <h1 id="endTitle">胜利！</h1>
+    <p id="endText"></p>
+    <div id="endTasks" class="taskList"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="startGame()">再玩一次</button>
+      <button class="btn secondary" onclick="showMenu()">主界面</button>
+    </div>
+  </div>
+
   <div id="controls"><button class="ctrl up" data-k="up">▲</button><button class="ctrl left" data-k="left">◀</button><button class="ctrl right" data-k="right">▶</button><button class="ctrl down" data-k="down">▼</button></div>
   <button id="shoot">🫧</button>
 </div>
 <script>
 const game=document.getElementById('game'), player=document.getElementById('player'), bossEl=document.getElementById('boss');
-const scoreEl=document.getElementById('score'), goldEl=document.getElementById('gold'), lifeEl=document.getElementById('life');
-let W,H,px,py,vx=0,vy=0,score=0,gold=0,life=3,playing=false,things=[],shots=[],boss=null,tick=0,keys={};
+const scoreEl=document.getElementById('score'), goldEl=document.getElementById('gold'), lifeEl=document.getElementById('life'), missionMini=document.getElementById('missionMini');
+const menu=document.getElementById('menu'), tasksPanel=document.getElementById('tasks'), endPanel=document.getElementById('end'), hud=document.getElementById('hud'), controls=document.getElementById('controls'), shootBtn=document.getElementById('shoot'), toast=document.getElementById('toast');
+let W,H,px,py,vx=0,vy=0,score=0,gold=0,life=3,playing=false,things=[],shots=[],boss=null,tick=0,keys={},hurtCooldown=0,toastTimer=0;
+let stats={pearls:0,golds:0,dodges:0,bossDefeated:false};
+const missions=[
+  {id:'pearls',icon:'💎',title:'珍珠收藏家',desc:'收集 20 分珍珠',goal:20,progress:()=>score,done:()=>score>=20},
+  {id:'golds',icon:'🌟',title:'金珍珠勇士',desc:'找到 3 颗金珍珠',goal:3,progress:()=>gold,done:()=>gold>=3},
+  {id:'safe',icon:'🛡️',title:'躲避高手',desc:'躲开 5 个危险生物',goal:5,progress:()=>stats.dodges,done:()=>stats.dodges>=5},
+  {id:'boss',icon:'🐙',title:'拯救王国',desc:'打败大章鱼 Boss',goal:1,progress:()=>stats.bossDefeated?1:0,done:()=>stats.bossDefeated}
+];
 function size(){W=innerWidth;H=innerHeight} addEventListener('resize',size); size();
-for(let i=0;i<24;i++){let b=document.createElement('div');b.className='bubble';let s=10+Math.random()*38;b.style.width=s+'px';b.style.height=s+'px';b.style.left=Math.random()*100+'vw';b.style.animationDelay=(-Math.random()*8)+'s';b.style.animationDuration=(5+Math.random()*7)+'s';game.appendChild(b)}
-function startGame(){document.getElementById('start').style.display='none';document.getElementById('end').style.display='none';things.forEach(o=>o.el.remove());shots.forEach(o=>o.el.remove());things=[];shots=[];boss=null;bossEl.style.display='none';px=80;py=H/2;score=0;gold=0;life=3;tick=0;playing=true;updateHud();loop()}
-function updateHud(){scoreEl.textContent=score;goldEl.textContent=gold;lifeEl.textContent=life}
-function spawn(type){let el=document.createElement('div');el.className='thing '+(type==='pearl'?'pearl':type==='gold'?'gold':'');let emoji={pearl:'🦪',gold:'🌟',jelly:'🪼',shark:'🦈'}[type];el.textContent=emoji;game.appendChild(el);let o={type,el,x:W+50,y:70+Math.random()*(H-150),vx: type==='shark'?-(3.4+Math.random()*2.2):-(2+Math.random()*2),size:type==='shark'?58:42};things.push(o)}
+for(let i=0;i<26;i++){let b=document.createElement('div');b.className='bubble';let s=10+Math.random()*38;b.style.width=s+'px';b.style.height=s+'px';b.style.left=Math.random()*100+'vw';b.style.animationDelay=(-Math.random()*8)+'s';b.style.animationDuration=(5+Math.random()*7)+'s';game.appendChild(b)}
+function setGameUi(on){hud.style.display=on?'flex':'none';player.style.display=on?'block':'none';controls.style.display=on?'block':'none';shootBtn.style.display=on?'block':'none'}
+function showMenu(){playing=false;clearWorld();setGameUi(false);menu.style.display='block';tasksPanel.style.display='none';endPanel.style.display='none';bossEl.style.display='none'}
+function showTasks(){renderTasks('taskList');menu.style.display='none';tasksPanel.style.display='block';endPanel.style.display='none'}
+function clearWorld(){things.forEach(o=>o.el.remove());shots.forEach(o=>o.el.remove());things=[];shots=[];boss=null;keys={}}
+function startGame(){menu.style.display='none';tasksPanel.style.display='none';endPanel.style.display='none';clearWorld();bossEl.style.display='none';px=80;py=H/2;score=0;gold=0;life=3;tick=0;hurtCooldown=0;stats={pearls:0,golds:0,dodges:0,bossDefeated:false};playing=true;setGameUi(true);updateHud();loop()}
+function updateHud(){scoreEl.textContent=score;goldEl.textContent=gold;lifeEl.textContent=life;missionMini.textContent=`任务 ${missions.filter(m=>m.done()).length}/${missions.length}`}
+function showToast(msg){toast.textContent=msg;toast.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.style.display='none',1200)}
+function renderTasks(targetId){const box=document.getElementById(targetId);box.innerHTML='';missions.forEach(m=>{const done=m.done();const now=Math.min(m.progress(),m.goal);const div=document.createElement('div');div.className='task'+(done?' done':'');div.innerHTML=`<div class="taskIcon">${m.icon}</div><div class="taskText"><b>${m.title}</b><span>${m.desc}：${now}/${m.goal}</span></div><div class="taskDone">${done?'✅':'⬜'}</div>`;box.appendChild(div)})}
+function spawn(type){let el=document.createElement('div');el.className='thing '+(type==='pearl'?'pearl':type==='gold'?'gold':'');let emoji={pearl:'🦪',gold:'🌟',jelly:'🪼',shark:'🦈'}[type];el.textContent=emoji;game.appendChild(el);let o={type,el,x:W+50,y:70+Math.random()*(H-150),vx:type==='shark'?-(3.4+Math.random()*2.2):-(2+Math.random()*2),size:type==='shark'?58:42,passed:false};things.push(o)}
 function rect(o){return {x:o.x,y:o.y,w:o.size||42,h:o.size||42}}function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
-function hurt(){life--;updateHud();player.style.filter='drop-shadow(0 0 18px red)';setTimeout(()=>player.style.filter='',180); if(life<=0) end(false)}
-function makeBoss(){boss={x:W-120,y:H/2-55,w:90,h:90,hp:8,dir:1};bossEl.style.display='block'}
+function hurt(){if(hurtCooldown>0)return;hurtCooldown=55;life--;updateHud();player.style.filter='drop-shadow(0 0 18px red)';setTimeout(()=>player.style.filter='',180); if(life<=0) end(false)}
+function makeBoss(){boss={x:W-120,y:H/2-55,w:90,h:90,hp:8,dir:1};bossEl.style.display='block';showToast('🐙 大章鱼出现了！发射泡泡！')}
 function shoot(){if(!playing)return;let el=document.createElement('div');el.className='shot';game.appendChild(el);shots.push({el,x:px+48,y:py+14,w:18,h:18,vx:8})}
-function end(win){playing=false;document.getElementById('endTitle').textContent=win?'🎉 拯救海洋王国！':'💦 小鱼回家休息啦';document.getElementById('endText').textContent=win?`Leo 赢了！珍珠分数：${score}`:`再试一次，收集金珍珠打败大章鱼！分数：${score}`;document.getElementById('end').style.display='block'}
-function loop(){if(!playing)return;tick++;vx=(keys.left?-4:0)+(keys.right?4:0);vy=(keys.up?-4:0)+(keys.down?4:0);px=Math.max(5,Math.min(W-62,px+vx));py=Math.max(56,Math.min(H-50,py+vy));player.style.left=px+'px';player.style.top=py+'px';player.style.transform=vx<0?'scaleX(-1)':'scaleX(1)';
+function end(win){playing=false;setGameUi(false);if(win)stats.bossDefeated=true;updateHud();document.getElementById('endTitle').textContent=win?'🎉 拯救海洋王国！':'💦 小鱼回家休息啦';document.getElementById('endText').textContent=win?`Leo 赢了！珍珠分数：${score}，任务完成 ${missions.filter(m=>m.done()).length}/${missions.length}`:`再试一次，收集金珍珠打败大章鱼！分数：${score}`;renderTasks('endTasks');endPanel.style.display='block'}
+function loop(){if(!playing)return;tick++;if(hurtCooldown>0)hurtCooldown--;vx=(keys.left?-4:0)+(keys.right?4:0);vy=(keys.up?-4:0)+(keys.down?4:0);px=Math.max(5,Math.min(W-62,px+vx));py=Math.max(56,Math.min(H-50,py+vy));player.style.left=px+'px';player.style.top=py+'px';player.style.transform=vx<0?'scaleX(-1)':'scaleX(1)';
  if(tick%42===0)spawn('pearl'); if(tick%160===0&&gold<3)spawn('gold'); if(tick%70===0)spawn('jelly'); if(tick%150===0)spawn('shark'); if(gold>=3&&!boss)makeBoss();
  let pr={x:px+4,y:py+4,w:46,h:30};
- things.forEach(o=>{o.x+=o.vx;o.y+=Math.sin((tick+o.x)/30)*0.8;o.el.style.left=o.x+'px';o.el.style.top=o.y+'px';o.el.style.fontSize=(o.size||42)+'px'; if(hit(pr,rect(o))){if(o.type==='pearl'){score+=10;o.dead=true}else if(o.type==='gold'){gold++;score+=50;o.dead=true}else{hurt();o.dead=true} updateHud()}});
+ things.forEach(o=>{o.x+=o.vx;o.y+=Math.sin((tick+o.x)/30)*0.8;o.el.style.left=o.x+'px';o.el.style.top=o.y+'px';o.el.style.fontSize=(o.size||42)+'px'; if((o.type==='jelly'||o.type==='shark')&&!o.passed&&o.x+o.size<px){o.passed=true;stats.dodges++; if(stats.dodges===5)showToast('🛡️ 完成任务：躲避高手！')} if(hit(pr,rect(o))){if(o.type==='pearl'){score+=10;stats.pearls++;o.dead=true;if(score>=20)showToast('💎 完成任务：珍珠收藏家！')}else if(o.type==='gold'){gold++;stats.golds++;score+=50;o.dead=true;if(gold>=3)showToast('🌟 完成任务：金珍珠勇士！')}else{hurt();o.dead=true} updateHud()}});
  things=things.filter(o=>{if(o.dead||o.x<-90){o.el.remove();return false}return true});
- shots.forEach(s=>{s.x+=s.vx;s.el.style.left=s.x+'px';s.el.style.top=s.y+'px'; if(boss&&hit(s,boss)){boss.hp--;s.dead=true;bossEl.style.transform='scale(1.18)';setTimeout(()=>bossEl.style.transform='',80);score+=20;updateHud(); if(boss.hp<=0)end(true)}});
+ shots.forEach(s=>{s.x+=s.vx;s.el.style.left=s.x+'px';s.el.style.top=s.y+'px'; if(boss&&hit(s,boss)){boss.hp--;s.dead=true;bossEl.style.transform='scale(1.18)';setTimeout(()=>bossEl.style.transform='',80);score+=20;updateHud(); if(boss.hp<=0){stats.bossDefeated=true;end(true)}}});
  shots=shots.filter(s=>{if(s.dead||s.x>W+30){s.el.remove();return false}return true});
  if(boss){boss.y+=boss.dir*2.2;if(boss.y<70||boss.y>H-110)boss.dir*=-1;bossEl.style.left=boss.x+'px';bossEl.style.top=boss.y+'px'; if(hit(pr,boss)){hurt();px=60}}
  requestAnimationFrame(loop)}
-addEventListener('keydown',e=>{if(e.key==='ArrowLeft')keys.left=true;if(e.key==='ArrowRight')keys.right=true;if(e.key==='ArrowUp')keys.up=true;if(e.key==='ArrowDown')keys.down=true;if(e.key===' ')shoot()});
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')keys.left=true;if(e.key==='ArrowRight')keys.right=true;if(e.key==='ArrowUp')keys.up=true;if(e.key==='ArrowDown')keys.down=true;if(e.key===' ')shoot();if(e.key==='Enter'&&!playing)startGame()});
 addEventListener('keyup',e=>{if(e.key==='ArrowLeft')keys.left=false;if(e.key==='ArrowRight')keys.right=false;if(e.key==='ArrowUp')keys.up=false;if(e.key==='ArrowDown')keys.down=false});
-document.querySelectorAll('.ctrl').forEach(b=>{let k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});b.addEventListener('pointerup',()=>keys[k]=false);b.addEventListener('pointerleave',()=>keys[k]=false)});document.getElementById('shoot').addEventListener('pointerdown',e=>{e.preventDefault();shoot()});
+document.querySelectorAll('.ctrl').forEach(b=>{let k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});b.addEventListener('pointerup',()=>keys[k]=false);b.addEventListener('pointerleave',()=>keys[k]=false);b.addEventListener('pointercancel',()=>keys[k]=false)});shootBtn.addEventListener('pointerdown',e=>{e.preventDefault();shoot()});
+renderTasks('taskList');
 </script>
 </body>
 </html>
