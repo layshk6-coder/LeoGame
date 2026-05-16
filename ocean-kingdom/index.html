@@ -72,12 +72,13 @@ const game=document.getElementById('game'), player=document.getElementById('play
 const scoreEl=document.getElementById('score'), goldEl=document.getElementById('gold'), lifeEl=document.getElementById('life'), missionMini=document.getElementById('missionMini');
 const menu=document.getElementById('menu'), tasksPanel=document.getElementById('tasks'), endPanel=document.getElementById('end'), hud=document.getElementById('hud'), controls=document.getElementById('controls'), shootBtn=document.getElementById('shoot'), toast=document.getElementById('toast');
 let W,H,px,py,vx=0,vy=0,score=0,gold=0,life=3,playing=false,things=[],shots=[],boss=null,tick=0,keys={},hurtCooldown=0,toastTimer=0;
-let stats={pearls:0,golds:0,dodges:0,bossDefeated:false};
+let stats={pearls:0,golds:0,dodges:0,enemiesDefeated:0,bossDefeated:false};
 const missions=[
   {id:'pearls',icon:'💎',title:'珍珠收藏家',desc:'收集 20 分珍珠',goal:20,progress:()=>score,done:()=>score>=20},
   {id:'golds',icon:'🌟',title:'金珍珠勇士',desc:'找到 3 颗金珍珠',goal:3,progress:()=>gold,done:()=>gold>=3},
   {id:'safe',icon:'🛡️',title:'躲避高手',desc:'躲开 5 个危险生物',goal:5,progress:()=>stats.dodges,done:()=>stats.dodges>=5},
-  {id:'boss',icon:'🐙',title:'拯救王国',desc:'打败大章鱼 Boss',goal:1,progress:()=>stats.bossDefeated?1:0,done:()=>stats.bossDefeated}
+  {id:'enemy',icon:'🫧',title:'泡泡战士',desc:'用泡泡打败 3 个水母或鲨鱼',goal:3,progress:()=>stats.enemiesDefeated,done:()=>stats.enemiesDefeated>=3},
+  {id:'boss',icon:'🐙',title:'打败大章鱼',desc:'用泡泡打败大章鱼 Boss',goal:1,progress:()=>stats.bossDefeated?1:0,done:()=>stats.bossDefeated}
 ];
 function size(){W=innerWidth;H=innerHeight} addEventListener('resize',size); size();
 for(let i=0;i<26;i++){let b=document.createElement('div');b.className='bubble';let s=10+Math.random()*38;b.style.width=s+'px';b.style.height=s+'px';b.style.left=Math.random()*100+'vw';b.style.animationDelay=(-Math.random()*8)+'s';b.style.animationDuration=(5+Math.random()*7)+'s';game.appendChild(b)}
@@ -85,7 +86,7 @@ function setGameUi(on){hud.style.display=on?'flex':'none';player.style.display=o
 function showMenu(){playing=false;clearWorld();setGameUi(false);menu.style.display='block';tasksPanel.style.display='none';endPanel.style.display='none';bossEl.style.display='none'}
 function showTasks(){renderTasks('taskList');menu.style.display='none';tasksPanel.style.display='block';endPanel.style.display='none'}
 function clearWorld(){things.forEach(o=>o.el.remove());shots.forEach(o=>o.el.remove());things=[];shots=[];boss=null;keys={}}
-function startGame(){menu.style.display='none';tasksPanel.style.display='none';endPanel.style.display='none';clearWorld();bossEl.style.display='none';px=80;py=H/2;score=0;gold=0;life=3;tick=0;hurtCooldown=0;stats={pearls:0,golds:0,dodges:0,bossDefeated:false};playing=true;setGameUi(true);updateHud();loop()}
+function startGame(){menu.style.display='none';tasksPanel.style.display='none';endPanel.style.display='none';clearWorld();bossEl.style.display='none';px=80;py=H/2;score=0;gold=0;life=3;tick=0;hurtCooldown=0;stats={pearls:0,golds:0,dodges:0,enemiesDefeated:0,bossDefeated:false};playing=true;setGameUi(true);updateHud();loop()}
 function updateHud(){scoreEl.textContent=score;goldEl.textContent=gold;lifeEl.textContent=life;missionMini.textContent=`任务 ${missions.filter(m=>m.done()).length}/${missions.length}`}
 function showToast(msg){toast.textContent=msg;toast.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.style.display='none',1200)}
 function renderTasks(targetId){const box=document.getElementById(targetId);box.innerHTML='';missions.forEach(m=>{const done=m.done();const now=Math.min(m.progress(),m.goal);const div=document.createElement('div');div.className='task'+(done?' done':'');div.innerHTML=`<div class="taskIcon">${m.icon}</div><div class="taskText"><b>${m.title}</b><span>${m.desc}：${now}/${m.goal}</span></div><div class="taskDone">${done?'✅':'⬜'}</div>`;box.appendChild(div)})}
@@ -100,7 +101,9 @@ function loop(){if(!playing)return;tick++;if(hurtCooldown>0)hurtCooldown--;vx=(k
  let pr={x:px+4,y:py+4,w:46,h:30};
  things.forEach(o=>{o.x+=o.vx;o.y+=Math.sin((tick+o.x)/30)*0.8;o.el.style.left=o.x+'px';o.el.style.top=o.y+'px';o.el.style.fontSize=(o.size||42)+'px'; if((o.type==='jelly'||o.type==='shark')&&!o.passed&&o.x+o.size<px){o.passed=true;stats.dodges++; if(stats.dodges===5)showToast('🛡️ 完成任务：躲避高手！')} if(hit(pr,rect(o))){if(o.type==='pearl'){score+=10;stats.pearls++;o.dead=true;if(score>=20)showToast('💎 完成任务：珍珠收藏家！')}else if(o.type==='gold'){gold++;stats.golds++;score+=50;o.dead=true;if(gold>=3)showToast('🌟 完成任务：金珍珠勇士！')}else{hurt();o.dead=true} updateHud()}});
  things=things.filter(o=>{if(o.dead||o.x<-90){o.el.remove();return false}return true});
- shots.forEach(s=>{s.x+=s.vx;s.el.style.left=s.x+'px';s.el.style.top=s.y+'px'; if(boss&&hit(s,boss)){boss.hp--;s.dead=true;bossEl.style.transform='scale(1.18)';setTimeout(()=>bossEl.style.transform='',80);score+=20;updateHud(); if(boss.hp<=0){stats.bossDefeated=true;end(true)}}});
+ shots.forEach(s=>{s.x+=s.vx;s.el.style.left=s.x+'px';s.el.style.top=s.y+'px';
+   things.forEach(o=>{if(!s.dead&&(o.type==='jelly'||o.type==='shark')&&hit(s,rect(o))){s.dead=true;o.dead=true;stats.enemiesDefeated++;score+=o.type==='shark'?25:15;showToast(stats.enemiesDefeated>=3?'🫧 完成任务：泡泡战士！':'🫧 打败一个危险生物！');updateHud()}});
+   if(!s.dead&&boss&&hit(s,boss)){boss.hp--;s.dead=true;bossEl.style.transform='scale(1.18)';setTimeout(()=>bossEl.style.transform='',80);score+=20;updateHud(); if(boss.hp<=0){stats.bossDefeated=true;end(true)}}});
  shots=shots.filter(s=>{if(s.dead||s.x>W+30){s.el.remove();return false}return true});
  if(boss){boss.y+=boss.dir*2.2;if(boss.y<70||boss.y>H-110)boss.dir*=-1;bossEl.style.left=boss.x+'px';bossEl.style.top=boss.y+'px'; if(hit(pr,boss)){hurt();px=60}}
  requestAnimationFrame(loop)}
