@@ -28,7 +28,7 @@
 </head>
 <body>
 <div id="game">
-  <div id="hud"><div class="pill">第 <span id="level">1</span> 关</div><div class="pill">💎 <span id="score">0</span></div><div class="pill">🌟 <span id="gold">0</span>/3</div><div class="pill">⚔️ <span id="attack">500</span></div><div class="pill">🛡️ <span id="defense">17000</span></div><div class="pill">❤️ <span id="life">3</span>/<span id="maxLife">3</span></div><div id="missionMini" class="pill">任务 0/6</div></div>
+  <div id="hud"><div class="pill">第 <span id="level">1</span> 关</div><div class="pill">💎 <span id="score">0</span></div><div class="pill">🌟 <span id="gold">0</span>/3</div><div class="pill">⚔️ <span id="attack">50</span></div><div class="pill">🛡️ <span id="defense">56</span></div><div class="pill">❤️ <span id="life">3</span>/<span id="maxLife">3</span></div><div id="missionMini" class="pill">任务 0/6</div></div>
   <div class="seaweed s1">🌿</div><div class="seaweed s2">🪸</div><div class="seaweed s3">🌿</div><div class="seaweed s4">🪸</div>
   <div id="player"><div class="fishBody"><div class="fishEye"></div></div><div class="fishTail"></div></div>
   <div id="boss">🐙</div>
@@ -72,7 +72,7 @@ const game=document.getElementById('game'), player=document.getElementById('play
 const scoreEl=document.getElementById('score'), goldEl=document.getElementById('gold'), lifeEl=document.getElementById('life'), maxLifeEl=document.getElementById('maxLife'), missionMini=document.getElementById('missionMini');
 const levelEl=document.getElementById('level'), attackEl=document.getElementById('attack'), defenseEl=document.getElementById('defense');
 const menu=document.getElementById('menu'), tasksPanel=document.getElementById('tasks'), endPanel=document.getElementById('end'), hud=document.getElementById('hud'), controls=document.getElementById('controls'), shootBtn=document.getElementById('shoot'), toast=document.getElementById('toast');
-let W,H,px,py,vx=0,vy=0,score=0,gold=0,life=3,maxLife=3,attack=530,defense=17000,level=1,playing=false,gameStarted=false,things=[],shots=[],boss=null,tick=0,keys={},hurtCooldown=0,toastTimer=0;
+let W,H,px,py,vx=0,vy=0,score=0,gold=0,life=3,maxLife=3,attack=50,defense=56,level=1,playing=false,gameStarted=false,things=[],shots=[],boss=null,tick=0,keys={},hurtCooldown=0,toastTimer=0;
 let stats={monsters:0,golds:0,bossKillsLevel:0,bossKillsTotal:0,levelsCleared:0};
 let readyRewards={};
 const missions=[
@@ -89,7 +89,7 @@ function setGameUi(on){hud.style.display=on?'flex':'none';player.style.display=o
 function showMenu(){playing=false;clearWorld();setGameUi(false);menu.style.display='block';tasksPanel.style.display='none';endPanel.style.display='none';bossEl.style.display='none';renderTasks('taskList')}
 function showTasks(){renderTasks('taskList');menu.style.display='none';tasksPanel.style.display='block';endPanel.style.display='none'}
 function clearWorld(){things.forEach(o=>o.el.remove());shots.forEach(o=>o.el.remove());things=[];shots=[];boss=null;keys={}}
-function resetAdventure(){score=0;gold=0;life=3;maxLife=3;attack=530;defense=17000;level=1;stats={monsters:0,golds:0,bossKillsLevel:0,bossKillsTotal:0,levelsCleared:0};readyRewards={};gameStarted=true}
+function resetAdventure(){score=0;gold=0;life=3;maxLife=3;attack=50;defense=56;level=1;stats={monsters:0,golds:0,bossKillsLevel:0,bossKillsTotal:0,levelsCleared:0};readyRewards={};gameStarted=true}
 function resetTaskProgress(){stats.monsters=0;stats.golds=0;stats.bossKillsLevel=0;gold=0}
 function startGame(){menu.style.display='none';tasksPanel.style.display='none';endPanel.style.display='none';clearWorld();bossEl.style.display='none';if(!gameStarted)resetAdventure();px=80;py=H/2;gold=0;tick=0;hurtCooldown=0;playing=true;setGameUi(true);updateHud();loop()}
 function updateHud(){scoreEl.textContent=score;goldEl.textContent=gold;lifeEl.textContent=life;maxLifeEl.textContent=maxLife;levelEl.textContent=level;attackEl.textContent=attack;defenseEl.textContent=defense;missionMini.textContent=`可领取 ${Object.keys(readyRewards).length}/${missions.length}`}
