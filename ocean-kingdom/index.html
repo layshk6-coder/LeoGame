@@ -20,7 +20,8 @@
     .panel h1{font-size:clamp(34px,7vw,64px);line-height:1.05;margin-bottom:10px;text-shadow:0 5px 0 rgba(0,52,120,.6),0 8px 18px rgba(0,0,0,.3)}.panel h2{font-size:clamp(26px,5vw,42px);margin-bottom:12px}.panel p{font-size:18px;line-height:1.6;margin:8px auto;max-width:520px;color:#e8fbff}.menuFish{font-size:74px;animation:swim 2s ease-in-out infinite alternate}@keyframes swim{to{transform:translateX(16px) rotate(6deg)}}
     .btnRow{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:18px}.btn{border:0;border-radius:999px;padding:14px 24px;font-size:22px;font-weight:900;color:#06366b;background:linear-gradient(180deg,#fff47a,#ffbd2e);box-shadow:0 8px 0 #cf7800,0 14px 24px rgba(0,0,0,.25);cursor:pointer}.btn:active{transform:translateY(5px);box-shadow:0 3px 0 #cf7800,0 8px 16px rgba(0,0,0,.2)}.btn.secondary{background:linear-gradient(180deg,#dffbff,#73e0ff);box-shadow:0 8px 0 #1689bd,0 14px 24px rgba(0,0,0,.25);color:#04395b}.btn.ghost{background:rgba(255,255,255,.16);color:white;border:2px solid rgba(255,255,255,.55);box-shadow:none}
     .taskList{display:grid;gap:12px;margin:16px auto 6px;max-width:540px;text-align:left}.task{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.24);border-radius:18px;padding:12px}.taskIcon{font-size:28px;width:38px;text-align:center}.taskText{flex:1}.taskText b{display:block;font-size:18px}.taskText span{display:block;color:#d2f7ff;margin-top:3px}.taskDone{font-size:28px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.25))}.task.done{background:rgba(92,255,168,.2);border-color:rgba(125,255,190,.75)}.claimBtn{border:0;border-radius:999px;padding:8px 12px;font-size:15px;font-weight:900;color:#073257;background:linear-gradient(180deg,#fff47a,#ffbd2e);box-shadow:0 4px 0 #c87800;pointer-events:auto}.claimBtn:disabled{opacity:.55;background:rgba(255,255,255,.25);color:white;box-shadow:none}
-    #controls{position:absolute;z-index:6;left:18px;bottom:18px;width:160px;height:160px;display:none}.ctrl{position:absolute;width:58px;height:58px;border-radius:18px;border:2px solid rgba(255,255,255,.5);background:rgba(2,60,130,.62);color:white;font-size:25px;font-weight:900;box-shadow:0 7px 14px rgba(0,0,0,.25)}.up{left:51px;top:0}.left{left:0;top:51px}.right{right:0;top:51px}.down{left:51px;bottom:0}#shoot{position:absolute;right:28px;bottom:34px;z-index:6;width:82px;height:82px;border-radius:50%;border:3px solid rgba(255,255,255,.62);background:rgba(255,255,255,.24);font-size:36px;display:none;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+    .shopList{display:grid;gap:12px;margin:16px auto 6px;max-width:560px;text-align:left}.shopItem{display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.14);border:2px solid rgba(255,255,255,.24);border-radius:18px;padding:12px}.shopIcon{font-size:30px;width:40px;text-align:center}.shopText{flex:1}.shopText b{display:block;font-size:18px}.shopText span{display:block;color:#d2f7ff;margin-top:3px}
+    #controls{position:absolute;z-index:6;left:18px;bottom:18px;width:160px;height:160px;display:none}.ctrl{position:absolute;width:58px;height:58px;border-radius:18px;border:2px solid rgba(255,255,255,.5);background:rgba(2,60,130,.62);color:white;font-size:25px;font-weight:900;box-shadow:0 7px 14px rgba(0,0,0,.25)}.up{left:51px;top:0}.left{left:0;top:51px}.right{right:0;top:51px}.down{left:51px;bottom:0}#shoot{position:absolute;right:28px;bottom:34px;z-index:6;width:82px;height:82px;border-radius:50%;border:3px solid rgba(255,255,255,.62);background:rgba(255,255,255,.24);font-size:36px;display:none;box-shadow:0 8px 20px rgba(0,0,0,.25)}#bombBtn{position:absolute;right:118px;bottom:42px;z-index:6;width:66px;height:66px;border-radius:50%;border:3px solid rgba(255,255,255,.62);background:rgba(0,120,255,.34);font-size:30px;display:none;box-shadow:0 8px 20px rgba(0,0,0,.25)}
     #toast{position:absolute;z-index:12;left:50%;top:92px;transform:translateX(-50%);background:rgba(0,29,67,.82);border:2px solid rgba(255,255,255,.5);border-radius:999px;padding:10px 18px;font-size:18px;font-weight:900;display:none;box-shadow:0 10px 22px rgba(0,0,0,.25)}
     .seaweed{position:absolute;bottom:-8px;font-size:52px;opacity:.8;filter:drop-shadow(0 5px 7px rgba(0,0,0,.25));z-index:1}.s1{left:5%;transform:rotate(-8deg)}.s2{left:28%;font-size:42px}.s3{right:12%;transform:rotate(7deg)}.s4{right:36%;font-size:48px}
     @media (max-width:640px){#hud{font-size:13px}.pill{padding:7px 9px}.panel{padding:22px 14px;border-radius:24px}.btn{font-size:19px;padding:13px 19px}#controls{transform:scale(.9);transform-origin:left bottom}#shoot{right:18px;bottom:24px}}
@@ -28,7 +29,7 @@
 </head>
 <body>
 <div id="game">
-  <div id="hud"><div class="pill">第 <span id="level">1</span> 关</div><div class="pill">💎 <span id="score">0</span></div><div class="pill">🌟 <span id="gold">0</span>/3</div><div class="pill">⚔️ <span id="attack">50</span></div><div class="pill">🛡️ <span id="defense">56</span></div><div class="pill">❤️ <span id="life">3</span>/<span id="maxLife">3</span></div><div id="missionMini" class="pill">任务 0/6</div></div>
+  <div id="hud"><div class="pill">第 <span id="level">1</span> 关</div><div class="pill">💎 <span id="score">0</span></div><div class="pill">💣 <span id="waterBombs">0</span></div><div class="pill">🌟 <span id="gold">0</span>/3</div><div class="pill">⚔️ <span id="attack">50</span></div><div class="pill">🛡️ <span id="defense">56</span></div><div class="pill">❤️ <span id="life">3</span>/<span id="maxLife">3</span></div><div id="missionMini" class="pill">任务 0/6</div></div>
   <div class="seaweed s1">🌿</div><div class="seaweed s2">🪸</div><div class="seaweed s3">🌿</div><div class="seaweed s4">🪸</div>
   <div id="player"><div class="fishBody"><div class="fishEye"></div></div><div class="fishTail"></div></div>
   <div id="boss">🐙</div>
@@ -41,6 +42,7 @@
     <div class="btnRow">
       <button class="btn" onclick="startGame()">▶ 开始游戏</button>
       <button class="btn secondary" onclick="showTasks()">📜 任务</button>
+      <button class="btn secondary" onclick="showShop()">🎁 礼物兑换</button>
     </div>
   </div>
 
@@ -48,6 +50,18 @@
     <h2>📜 海洋任务</h2>
     <p>完成任务后要点“领取”才获得奖励；每闯完一关，关内任务进度会回到 0/x，但已经完成还没领取的奖励会保留。闯关数和累计 BOSS 数会继续累积。</p>
     <div class="taskList" id="taskList"></div>
+    <div class="btnRow">
+      <button class="btn" onclick="startGame()">▶ 开始挑战</button>
+      <button class="btn secondary" onclick="showShop()">🎁 礼物兑换</button>
+      <button class="btn ghost" onclick="showMenu()">返回主界面</button>
+    </div>
+  </div>
+
+  <div id="shop" class="panel" style="display:none">
+    <h2>🎁 宝石礼物兑换</h2>
+    <p>用收集到的宝石兑换礼物：生命、攻击力、防御力和水炸弹。</p>
+    <p>当前宝石：💎 <b id="shopScore">0</b>　水炸弹：💣 <b id="shopBombs">0</b></p>
+    <div class="shopList" id="shopList"></div>
     <div class="btnRow">
       <button class="btn" onclick="startGame()">▶ 开始挑战</button>
       <button class="btn ghost" onclick="showMenu()">返回主界面</button>
@@ -65,14 +79,15 @@
   </div>
 
   <div id="controls"><button class="ctrl up" data-k="up">▲</button><button class="ctrl left" data-k="left">◀</button><button class="ctrl right" data-k="right">▶</button><button class="ctrl down" data-k="down">▼</button></div>
+  <button id="bombBtn">💣</button>
   <button id="shoot">🫧</button>
 </div>
 <script>
 const game=document.getElementById('game'), player=document.getElementById('player'), bossEl=document.getElementById('boss');
-const scoreEl=document.getElementById('score'), goldEl=document.getElementById('gold'), lifeEl=document.getElementById('life'), maxLifeEl=document.getElementById('maxLife'), missionMini=document.getElementById('missionMini');
+const scoreEl=document.getElementById('score'), goldEl=document.getElementById('gold'), lifeEl=document.getElementById('life'), maxLifeEl=document.getElementById('maxLife'), missionMini=document.getElementById('missionMini'), waterBombsEl=document.getElementById('waterBombs');
 const levelEl=document.getElementById('level'), attackEl=document.getElementById('attack'), defenseEl=document.getElementById('defense');
-const menu=document.getElementById('menu'), tasksPanel=document.getElementById('tasks'), endPanel=document.getElementById('end'), hud=document.getElementById('hud'), controls=document.getElementById('controls'), shootBtn=document.getElementById('shoot'), toast=document.getElementById('toast');
-let W,H,px,py,vx=0,vy=0,score=0,gold=0,life=3,maxLife=3,attack=50,defense=56,level=1,playing=false,gameStarted=false,things=[],shots=[],boss=null,tick=0,keys={},hurtCooldown=0,toastTimer=0;
+const menu=document.getElementById('menu'), tasksPanel=document.getElementById('tasks'), shopPanel=document.getElementById('shop'), endPanel=document.getElementById('end'), hud=document.getElementById('hud'), controls=document.getElementById('controls'), shootBtn=document.getElementById('shoot'), bombBtn=document.getElementById('bombBtn'), toast=document.getElementById('toast');
+let W,H,px,py,vx=0,vy=0,score=0,gold=0,life=3,maxLife=3,attack=50,defense=56,waterBombs=0,level=1,playing=false,gameStarted=false,things=[],shots=[],boss=null,tick=0,keys={},hurtCooldown=0,toastTimer=0;
 let stats={monsters:0,golds:0,bossKillsLevel:0,bossKillsTotal:0,levelsCleared:0};
 let readyRewards={};
 const missions=[
@@ -83,28 +98,38 @@ const missions=[
   {id:'boss5',icon:'👑',title:'打败 5 个 BOSS',desc:'累计打败 5 个大章鱼 BOSS',goal:5,progress:()=>stats.bossKillsTotal,reward:'加一条命',apply:()=>{maxLife+=1;life=maxLife}},
   {id:'level10',icon:'🏆',title:'闯十关',desc:'闯过 10 关，完成最终挑战',goal:10,progress:()=>stats.levelsCleared,reward:'加两条命、加 100 攻击力、加 300 防御力',apply:()=>{maxLife+=2;life=maxLife;attack+=100;defense+=300}}
 ];
+const exchanges=[
+  {id:'life',icon:'❤️',title:'兑换一条命',desc:'最大生命 +1，并立刻回满生命',cost:10000,apply:()=>{maxLife+=1;life=maxLife}},
+  {id:'attack',icon:'⚔️',title:'兑换 70 攻击力',desc:'攻击力 +70',cost:700,apply:()=>{attack+=70}},
+  {id:'defense',icon:'🛡️',title:'兑换 700 防御力',desc:'防御力 +700',cost:500,apply:()=>{defense+=700}},
+  {id:'waterBomb',icon:'💣',title:'兑换一个水炸弹',desc:'游戏中点 💣 清掉屏幕怪兽，炸 BOSS 1000 血',cost:1700,apply:()=>{waterBombs+=1}}
+];
 function size(){W=innerWidth;H=innerHeight} addEventListener('resize',size); size();
 for(let i=0;i<26;i++){let b=document.createElement('div');b.className='bubble';let s=10+Math.random()*38;b.style.width=s+'px';b.style.height=s+'px';b.style.left=Math.random()*100+'vw';b.style.animationDelay=(-Math.random()*8)+'s';b.style.animationDuration=(5+Math.random()*7)+'s';game.appendChild(b)}
-function setGameUi(on){hud.style.display=on?'flex':'none';player.style.display=on?'block':'none';controls.style.display=on?'block':'none';shootBtn.style.display=on?'block':'none'}
-function showMenu(){playing=false;clearWorld();setGameUi(false);menu.style.display='block';tasksPanel.style.display='none';endPanel.style.display='none';bossEl.style.display='none';renderTasks('taskList')}
-function showTasks(){renderTasks('taskList');menu.style.display='none';tasksPanel.style.display='block';endPanel.style.display='none'}
+function setGameUi(on){hud.style.display=on?'flex':'none';player.style.display=on?'block':'none';controls.style.display=on?'block':'none';shootBtn.style.display=on?'block':'none';bombBtn.style.display=on?'block':'none'}
+function showMenu(){playing=false;clearWorld();setGameUi(false);menu.style.display='block';tasksPanel.style.display='none';shopPanel.style.display='none';endPanel.style.display='none';bossEl.style.display='none';renderTasks('taskList')}
+function showTasks(){renderTasks('taskList');menu.style.display='none';tasksPanel.style.display='block';shopPanel.style.display='none';endPanel.style.display='none'}
+function showShop(){playing=false;setGameUi(false);menu.style.display='none';tasksPanel.style.display='none';shopPanel.style.display='block';endPanel.style.display='none';renderShop()}
 function clearWorld(){things.forEach(o=>o.el.remove());shots.forEach(o=>o.el.remove());things=[];shots=[];boss=null;keys={}}
-function resetAdventure(){score=0;gold=0;life=3;maxLife=3;attack=50;defense=56;level=1;stats={monsters:0,golds:0,bossKillsLevel:0,bossKillsTotal:0,levelsCleared:0};readyRewards={};gameStarted=true}
+function resetAdventure(){score=0;gold=0;life=3;maxLife=3;attack=50;defense=56;waterBombs=0;level=1;stats={monsters:0,golds:0,bossKillsLevel:0,bossKillsTotal:0,levelsCleared:0};readyRewards={};gameStarted=true}
 function resetTaskProgress(){stats.monsters=0;stats.golds=0;stats.bossKillsLevel=0;gold=0}
-function startGame(){menu.style.display='none';tasksPanel.style.display='none';endPanel.style.display='none';clearWorld();bossEl.style.display='none';if(!gameStarted)resetAdventure();px=80;py=H/2;gold=0;tick=0;hurtCooldown=0;playing=true;setGameUi(true);updateHud();loop()}
-function updateHud(){scoreEl.textContent=score;goldEl.textContent=gold;lifeEl.textContent=life;maxLifeEl.textContent=maxLife;levelEl.textContent=level;attackEl.textContent=attack;defenseEl.textContent=defense;missionMini.textContent=`可领取 ${Object.keys(readyRewards).length}/${missions.length}`}
+function startGame(){menu.style.display='none';tasksPanel.style.display='none';shopPanel.style.display='none';endPanel.style.display='none';clearWorld();bossEl.style.display='none';if(!gameStarted)resetAdventure();px=80;py=H/2;gold=0;tick=0;hurtCooldown=0;playing=true;setGameUi(true);updateHud();loop()}
+function updateHud(){scoreEl.textContent=score;goldEl.textContent=gold;waterBombsEl.textContent=waterBombs;lifeEl.textContent=life;maxLifeEl.textContent=maxLife;levelEl.textContent=level;attackEl.textContent=attack;defenseEl.textContent=defense;missionMini.textContent=`可领取 ${Object.keys(readyRewards).length}/${missions.length}`;renderShop()}
 function showToast(msg){toast.textContent=msg;toast.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>toast.style.display='none',1600)}
 function checkReadyRewards(){missions.forEach(m=>{if(!readyRewards[m.id]&&m.progress()>=m.goal){readyRewards[m.id]=true;showToast(`✅ ${m.title}完成！去任务页点击领取`);updateHud()}})}
 function claimReward(id){const m=missions.find(x=>x.id===id);if(!m||!readyRewards[id])return;m.apply();delete readyRewards[id];showToast(`🎁 已领取：${m.reward}`);updateHud();renderTasks('taskList');renderTasks('endTasks')}
 function renderTasks(targetId){const box=document.getElementById(targetId);if(!box)return;box.innerHTML='';missions.forEach(m=>{const ready=!!readyRewards[m.id];const now=ready?m.goal:Math.min(m.progress(),m.goal);const div=document.createElement('div');div.className='task'+(ready?' done':'');div.innerHTML=`<div class="taskIcon">${m.icon}</div><div class="taskText"><b>${m.title}</b><span>${m.desc}：${now}/${m.goal}</span><span>奖励：${m.reward}</span></div><button class="claimBtn" onclick="claimReward('${m.id}')" ${ready?'':'disabled'}>${ready?'领取':'未完成'}</button>`;box.appendChild(div)})}
+function renderShop(){const box=document.getElementById('shopList');if(!box)return;document.getElementById('shopScore').textContent=score;document.getElementById('shopBombs').textContent=waterBombs;box.innerHTML='';exchanges.forEach(x=>{const can=score>=x.cost;const div=document.createElement('div');div.className='shopItem';div.innerHTML=`<div class="shopIcon">${x.icon}</div><div class="shopText"><b>${x.title}</b><span>${x.desc}</span><span>价格：💎 ${x.cost}</span></div><button class="claimBtn" onclick="buyGift('${x.id}')" ${can?'':'disabled'}>${can?'兑换':'宝石不够'}</button>`;box.appendChild(div)})}
+function buyGift(id){const x=exchanges.find(e=>e.id===id);if(!x||score<x.cost)return;score-=x.cost;x.apply();showToast(`🎁 兑换成功：${x.title}`);updateHud();renderShop()}
+function useWaterBomb(){if(!playing)return;if(waterBombs<=0){showToast('💣 还没有水炸弹，先去礼物兑换');return}waterBombs--;let defeated=0;things.forEach(o=>{if(o.type==='jelly'||o.type==='shark'){o.dead=true;defeated++;stats.monsters++;score+=15}});if(boss){boss.hp-=1000;bossEl.style.transform='scale(1.25)';setTimeout(()=>bossEl.style.transform='',90);score+=50;if(boss.hp<=0)defeatBoss()}showToast(`💥 水炸弹！打败 ${defeated} 个怪兽`);checkReadyRewards();updateHud()}
 function spawn(type){let el=document.createElement('div');el.className='thing '+(type==='pearl'?'pearl':type==='gold'?'gold':'');let emoji={pearl:'🦪',gold:'🌟',jelly:'🪼',shark:'🦈'}[type];el.textContent=emoji;game.appendChild(el);let o={type,el,x:W+50,y:70+Math.random()*(H-150),vx:type==='shark'?-(3.4+Math.random()*2.2+level*.08):-(2+Math.random()*2+level*.05),size:type==='shark'?58:42,passed:false};things.push(o)}
 function rect(o){return {x:o.x,y:o.y,w:o.size||42,h:o.size||42}}function hit(a,b){return a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y}
 function hurt(source='monster'){if(hurtCooldown>0)return;hurtCooldown=55;life--;showToast(source==='boss'?'🐙 BOSS 攻击！扣 1 滴血':'👾 怪兽攻击！扣 1 滴血');updateHud();player.style.filter='drop-shadow(0 0 18px red)';setTimeout(()=>player.style.filter='',180); if(life<=0) end(false)}
 function makeBoss(){boss={x:W-120,y:H/2-55,w:90,h:90,hp:17000,attack:530,defense:17000,dir:1};bossEl.style.display='block';showToast(`🐙 第 ${level} 关 BOSS 出现！防御力 17000，攻击力 530`) }
 function shoot(){if(!playing)return;let el=document.createElement('div');el.className='shot';game.appendChild(el);shots.push({el,x:px+48,y:py+14,w:18,h:18,vx:8})}
-function backToMenuAfterLevel(){playing=false;clearWorld();bossEl.style.display='none';level++;life=maxLife;resetTaskProgress();setGameUi(false);menu.style.display='block';tasksPanel.style.display='none';endPanel.style.display='none';showToast(`🏁 闯完一关！任务回到 0/x，未领取奖励已保留`);updateHud();renderTasks('taskList')}
+function backToMenuAfterLevel(){playing=false;clearWorld();bossEl.style.display='none';level++;life=maxLife;resetTaskProgress();setGameUi(false);menu.style.display='block';tasksPanel.style.display='none';shopPanel.style.display='none';endPanel.style.display='none';showToast(`🏁 闯完一关！任务回到 0/x，未领取奖励已保留`);updateHud();renderTasks('taskList')}
 function defeatBoss(){stats.bossKillsLevel++;stats.bossKillsTotal++;stats.levelsCleared++;score+=100+level*20;checkReadyRewards();if(stats.levelsCleared>=10){end(true)}else{backToMenuAfterLevel()}}
-function end(win){playing=false;gameStarted=false;setGameUi(false);updateHud();document.getElementById('endTitle').textContent=win?'🏆 闯过十关，成为海洋国王！':'💦 小鱼回家休息啦';document.getElementById('endText').textContent=win?`Leo 赢了！攻击力 ${attack}，防御力 ${defense}，生命 ${life}，还有 ${Object.keys(readyRewards).length} 个奖励可领取`:`再试一次，升级攻击力和防御力，继续闯关！分数：${score}`;renderTasks('endTasks');endPanel.style.display='block'}
+function end(win){playing=false;gameStarted=false;setGameUi(false);shopPanel.style.display='none';updateHud();document.getElementById('endTitle').textContent=win?'🏆 闯过十关，成为海洋国王！':'💦 小鱼回家休息啦';document.getElementById('endText').textContent=win?`Leo 赢了！攻击力 ${attack}，防御力 ${defense}，生命 ${life}，还有 ${Object.keys(readyRewards).length} 个奖励可领取`:`再试一次，升级攻击力和防御力，继续闯关！分数：${score}`;renderTasks('endTasks');endPanel.style.display='block'}
 function loop(){if(!playing)return;tick++;if(hurtCooldown>0)hurtCooldown--;vx=(keys.left?-4:0)+(keys.right?4:0);vy=(keys.up?-4:0)+(keys.down?4:0);px=Math.max(5,Math.min(W-62,px+vx));py=Math.max(56,Math.min(H-50,py+vy));player.style.left=px+'px';player.style.top=py+'px';player.style.transform=vx<0?'scaleX(-1)':'scaleX(1)';
  if(tick%42===0)spawn('pearl'); if(tick%150===0&&gold<3)spawn('gold'); if(tick%65===0)spawn('jelly'); if(tick%145===0)spawn('shark'); if(gold>=3&&!boss)makeBoss();
  let pr={x:px+4,y:py+4,w:46,h:30};
@@ -118,8 +143,8 @@ function loop(){if(!playing)return;tick++;if(hurtCooldown>0)hurtCooldown--;vx=(k
  requestAnimationFrame(loop)}
 addEventListener('keydown',e=>{if(e.key==='ArrowLeft')keys.left=true;if(e.key==='ArrowRight')keys.right=true;if(e.key==='ArrowUp')keys.up=true;if(e.key==='ArrowDown')keys.down=true;if(e.key===' ')shoot();if(e.key==='Enter'&&!playing)startGame()});
 addEventListener('keyup',e=>{if(e.key==='ArrowLeft')keys.left=false;if(e.key==='ArrowRight')keys.right=false;if(e.key==='ArrowUp')keys.up=false;if(e.key==='ArrowDown')keys.down=false});
-document.querySelectorAll('.ctrl').forEach(b=>{let k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});b.addEventListener('pointerup',()=>keys[k]=false);b.addEventListener('pointerleave',()=>keys[k]=false);b.addEventListener('pointercancel',()=>keys[k]=false)});shootBtn.addEventListener('pointerdown',e=>{e.preventDefault();shoot()});
-renderTasks('taskList');
+document.querySelectorAll('.ctrl').forEach(b=>{let k=b.dataset.k;b.addEventListener('pointerdown',e=>{e.preventDefault();keys[k]=true});b.addEventListener('pointerup',()=>keys[k]=false);b.addEventListener('pointerleave',()=>keys[k]=false);b.addEventListener('pointercancel',()=>keys[k]=false)});shootBtn.addEventListener('pointerdown',e=>{e.preventDefault();shoot()});bombBtn.addEventListener('pointerdown',e=>{e.preventDefault();useWaterBomb()});
+renderTasks('taskList');renderShop();
 </script>
 </body>
 </html>
