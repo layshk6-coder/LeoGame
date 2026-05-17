@@ -41,7 +41,7 @@
         <span>❤️ <span id="hp-bar">5/5</span></span>
         <span>🗡️ <span id="level-display">Lv.1</span></span>
         <span>🌊 第 <span id="wave-display">1</span> 波</span>
-        <span>💎 <span id="score-display">0</span></span>
+        <span>⭐ <span id="score-display">0</span></span>
     </div>
     <canvas id="game"></canvas>
     <div id="overlay">
@@ -99,13 +99,13 @@
         let player, monsters, projectiles, particles, hp, maxHp, score, level, wave, gameRunning, gameOver, attackCooldown, waveDelay;
 
         const MONSTER_TYPES = [
-            { emoji: '👾', name: '小怪兽', hp: 1, speed: 1, score: 15, size: 18, attack: 'none' },
-            { emoji: '👹', name: '红恶魔', hp: 2, speed: 1.2, score: 15, size: 22, attack: 'none' },
-            { emoji: '🐉', name: '恶龙', hp: 3, speed: 0.8, score: 15, size: 26, attack: 'none' },
+            { emoji: '👾', name: '小怪兽', hp: 1, speed: 1, score: 10, size: 18, attack: 'none' },
+            { emoji: '👹', name: '红恶魔', hp: 2, speed: 1.2, score: 20, size: 22, attack: 'none' },
+            { emoji: '🐉', name: '恶龙', hp: 3, speed: 0.8, score: 30, size: 26, attack: 'none' },
             { emoji: '🦇', name: '蝙蝠', hp: 1, speed: 2, score: 15, size: 16, attack: 'none' },
-            { emoji: '💀', name: '骷髅王', hp: 5, speed: 0.6, score: 15, size: 30, attack: 'none' },
-            { emoji: '🪱', name: '电击蚯蚓', hp: 2, speed: 0.7, score: 15, size: 20, attack: 'electric', atkRange: 120, atkCooldown: 3 },
-            { emoji: '🦔', name: '尖刺刺猬', hp: 4, speed: 0.5, score: 15, size: 24, attack: 'spike', spikeRange: 50, spikeDmg: 1, spikeCooldown: 1.5 },
+            { emoji: '💀', name: '骷髅王', hp: 5, speed: 0.6, score: 50, size: 30, attack: 'none' },
+            { emoji: '🪱', name: '电击蚯蚓', hp: 2, speed: 0.7, score: 25, size: 20, attack: 'electric', atkRange: 120, atkCooldown: 3 },
+            { emoji: '🦔', name: '尖刺刺猬', hp: 4, speed: 0.5, score: 35, size: 24, attack: 'spike', spikeRange: 50, spikeDmg: 1, spikeCooldown: 1.5 },
         ];
 
         function init() {

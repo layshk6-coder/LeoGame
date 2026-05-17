@@ -111,7 +111,7 @@ function loop(){if(!playing)return;tick++;if(hurtCooldown>0)hurtCooldown--;vx=(k
  things.forEach(o=>{o.x+=o.vx;o.y+=Math.sin((tick+o.x)/30)*0.8;o.el.style.left=o.x+'px';o.el.style.top=o.y+'px';o.el.style.fontSize=(o.size||42)+'px'; if(hit(pr,rect(o))){if(o.type==='pearl'){score+=10;o.dead=true}else if(o.type==='gold'){gold++;stats.golds++;score+=50;o.dead=true;checkReadyRewards()}else{hurt();o.dead=true} updateHud()}});
  things=things.filter(o=>{if(o.dead||o.x<-90){o.el.remove();return false}return true});
  shots.forEach(s=>{s.x+=s.vx;s.el.style.left=s.x+'px';s.el.style.top=s.y+'px';
-   things.forEach(o=>{if(!s.dead&&(o.type==='jelly'||o.type==='shark')&&hit(s,rect(o))){s.dead=true;o.dead=true;stats.monsters++;score+=o.type==='shark'?25:15;showToast(`🫧 打败怪物 ${stats.monsters} 个！`);checkReadyRewards();updateHud()}});
+   things.forEach(o=>{if(!s.dead&&(o.type==='jelly'||o.type==='shark')&&hit(s,rect(o))){s.dead=true;o.dead=true;stats.monsters++;score+=15;showToast(`🫧 打败怪物 ${stats.monsters} 个！+15 宝石`);checkReadyRewards();updateHud()}});
    if(!s.dead&&boss&&hit(s,boss)){boss.hp-=attack;s.dead=true;bossEl.style.transform='scale(1.18)';setTimeout(()=>bossEl.style.transform='',80);score+=20;updateHud(); if(boss.hp<=0)defeatBoss()}});
  shots=shots.filter(s=>{if(s.dead||s.x>W+30){s.el.remove();return false}return true});
  if(boss){boss.y+=boss.dir*(2.2+level*.05);if(boss.y<70||boss.y>H-110)boss.dir*=-1;bossEl.style.left=boss.x+'px';bossEl.style.top=boss.y+'px'; if(hit(pr,boss)){hurt('boss');px=60}}
