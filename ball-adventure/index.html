@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>球球大冒险 🟣</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            min-height: 100vh; min-height: 100dvh;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            font-family: "Microsoft YaHei", Arial, sans-serif;
+            color: #fff; overflow: hidden; touch-action: none; user-select: none;
+            background: radial-gradient(circle at 20% 20%, #63e6be 0 10%, transparent 35%),
+                        radial-gradient(circle at 80% 15%, #ffd43b 0 8%, transparent 32%),
+                        linear-gradient(135deg, #5f3dc4 0%, #228be6 45%, #20c997 100%);
+        }
+        #topbar {
+            width: min(920px, 96vw); display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+            margin: 8px 0; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,.25);
+        }
+        .pill { background: rgba(255,255,255,.2); border: 2px solid rgba(255,255,255,.35); border-radius: 999px; padding: 8px 10px; text-align: center; backdrop-filter: blur(8px); }
+        #wrap { position: relative; width: min(920px, 96vw); aspect-ratio: 16 / 9; max-height: 72vh; max-height: 72dvh; }
+        canvas { width: 100%; height: 100%; display: block; border-radius: 22px; background: #91e6a7; box-shadow: 0 18px 60px rgba(0,0,0,.35); border: 5px solid rgba(255,255,255,.65); }
+        #overlay {
+            position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center;
+            background: rgba(10, 12, 35, .78); padding: 18px;
+        }
+        #overlay.hidden { display: none; }
+        .card { max-width: 560px; width: min(560px, 94vw); text-align: center; padding: 28px; border-radius: 28px; background: linear-gradient(180deg, rgba(255,255,255,.96), rgba(233,248,255,.94)); color: #243042; box-shadow: 0 25px 80px rgba(0,0,0,.42); }
+        .card h1 { font-size: clamp(30px, 7vw, 58px); color: #7048e8; margin-bottom: 8px; }
+        .card p { font-size: 18px; line-height: 1.7; margin: 6px 0; }
+        .btn { margin-top: 18px; border: 0; border-radius: 18px; padding: 14px 34px; font-size: 22px; font-weight: 900; color: #fff; background: linear-gradient(135deg, #ff6b6b, #f783ac, #845ef7); box-shadow: 0 10px 0 #5f3dc4; cursor: pointer; }
+        .btn:active { transform: translateY(6px); box-shadow: 0 4px 0 #5f3dc4; }
+        #joy { display: none; position: fixed; left: 18px; bottom: 18px; width: 156px; height: 156px; z-index: 15; }
+        #joy button { position: absolute; width: 52px; height: 52px; border-radius: 16px; border: 3px solid rgba(255,255,255,.7); background: rgba(0,0,0,.22); color: white; font-size: 24px; font-weight: 900; }
+        #up { left: 52px; top: 0; } #down { left: 52px; bottom: 0; } #left { left: 0; top: 52px; } #right { right: 0; top: 52px; }
+        #jump { display: none; position: fixed; right: 24px; bottom: 34px; width: 86px; height: 86px; border-radius: 50%; border: 4px solid rgba(255,255,255,.78); background: rgba(255, 107, 107, .78); color: white; font-size: 18px; font-weight: 900; z-index: 15; }
+        .hint { width: min(920px, 96vw); text-align: center; opacity: .9; font-size: 14px; margin-top: 6px; }
+        @media (hover: none) and (pointer: coarse) { #joy, #jump { display: block; } #topbar { font-size: 13px; } .hint { display: none; } }
+    </style>
+</head>
+<body>
+    <div id="topbar">
+        <div class="pill">🏁 第 <span id="level">1</span> 关</div>
+        <div class="pill">⭐ 星星 <span id="stars">0</span>/<span id="need">0</span></div>
+        <div class="pill">❤️ 生命 <span id="life">3</span></div>
+        <div class="pill">💎 宝石 <span id="gems">0</span></div>
+    </div>
+    <div id="wrap"><canvas id="game" width="920" height="518"></canvas></div>
+    <div class="hint">电脑：方向键 / WASD 移动，空格跳跃。手机：左下角移动，右下角跳跃。</div>
+    <div id="overlay">
+        <div class="card">
+            <h1 id="title">🟣 球球大冒险</h1>
+            <p id="line1">帮助小球球滚过彩虹岛，收集星星和宝石。</p>
+            <p id="line2">躲开刺刺怪，找到金色传送门！</p>
+            <button class="btn" id="start">开始冒险</button>
+        </div>
+    </div>
+    <div id="joy">
+        <button id="up" data-key="ArrowUp">▲</button><button id="down" data-key="ArrowDown">▼</button>
+        <button id="left" data-key="ArrowLeft">◀</button><button id="right" data-key="ArrowRight">▶</button>
+    </div>
+    <button id="jump">跳跃</button>
+<script>
+(() => {
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const ui = {
+        level: document.getElementById('level'), stars: document.getElementById('stars'), need: document.getElementById('need'), life: document.getElementById('life'), gems: document.getElementById('gems'),
+        overlay: document.getElementById('overlay'), title: document.getElementById('title'), line1: document.getElementById('line1'), line2: document.getElementById('line2'), start: document.getElementById('start')
+    };
+    const keys = {};
+    const levelData = [
+        { name:'彩虹草地', bg:'#91e6a7', need:5, stars:[[150,360],[275,295],[430,245],[610,350],[775,270]], gems:[[520,165]], spikes:[[350,430],[700,430]], clouds:[[170,90],[690,75]], portal:[850,380] },
+        { name:'糖果山谷', bg:'#ffd8a8', need:7, stars:[[105,350],[215,270],[330,205],[455,295],[570,210],[685,310],[800,250]], gems:[[385,145],[735,155]], spikes:[[245,430],[505,430],[760,430]], clouds:[[260,90],[590,105]], portal:[850,360] },
+        { name:'星星城堡', bg:'#a5d8ff', need:9, stars:[[100,310],[190,230],[295,330],[380,185],[490,280],[600,205],[690,330],[780,230],[845,140]], gems:[[250,145],[540,140],[820,315]], spikes:[[180,430],[420,430],[635,430],[820,430]], clouds:[[150,100],[480,75],[760,90]], portal:[850,370] }
+    ];
+    let levelIndex = 0, life = 3, totalGems = 0, running = false, winTimer = 0;
+    let player, stars, gems, spikes, portal, clouds, particles;
+
+    function resetLevel(keepPlayer=false) {
+        const d = levelData[levelIndex];
+        player = keepPlayer && player ? player : { x:60, y:385, r:24, vx:0, vy:0, onGround:false, inv:0, spin:0 };
+        player.x = 60; player.y = 385; player.vx = 0; player.vy = 0; player.inv = 1;
+        stars = d.stars.map(([x,y]) => ({x,y, got:false, bob:Math.random()*9}));
+        gems = d.gems.map(([x,y]) => ({x,y, got:false, bob:Math.random()*9}));
+        spikes = d.spikes.map(([x,y]) => ({x,y, t:Math.random()*6}));
+        portal = { x:d.portal[0], y:d.portal[1], open:false, pulse:0 };
+        clouds = d.clouds; particles = [];
+        updateUI();
+    }
+    function updateUI() {
+        ui.level.textContent = levelIndex + 1;
+        ui.stars.textContent = stars.filter(s => s.got).length;
+        ui.need.textContent = levelData[levelIndex].need;
+        ui.life.textContent = life;
+        ui.gems.textContent = totalGems;
+    }
+    function show(title, a, b, btn='开始冒险') {
+        running = false; ui.title.textContent = title; ui.line1.textContent = a; ui.line2.textContent = b; ui.start.textContent = btn; ui.overlay.classList.remove('hidden');
+    }
+    function startGame() {
+        if (life <= 0 || levelIndex >= levelData.length) { levelIndex = 0; life = 3; totalGems = 0; }
+        resetLevel(); running = true; ui.overlay.classList.add('hidden');
+    }
+    ui.start.addEventListener('click', startGame);
+
+    document.addEventListener('keydown', e => { keys[e.key] = true; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault(); });
+    document.addEventListener('keyup', e => { keys[e.key] = false; });
+    document.querySelectorAll('#joy button').forEach(btn => {
+        const k = btn.dataset.key;
+        btn.addEventListener('touchstart', e => { e.preventDefault(); keys[k]=true; });
+        btn.addEventListener('touchend', e => { e.preventDefault(); keys[k]=false; });
+    });
+    const jump = document.getElementById('jump');
+    jump.addEventListener('touchstart', e => { e.preventDefault(); keys[' ']=true; keys['ArrowUp']=true; });
+    jump.addEventListener('touchend', e => { e.preventDefault(); keys[' ']=false; keys['ArrowUp']=false; });
+
+    function hit(a,b,dist) { return Math.hypot(a.x-b.x, a.y-b.y) < dist; }
+    function burst(x,y,color,count=12) { for(let i=0;i<count;i++){ const a=Math.random()*Math.PI*2, s=2+Math.random()*5; particles.push({x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,color}); } }
+    function damage() {
+        if (player.inv > 0) return;
+        life--; player.inv = 1.4; burst(player.x, player.y, '#ff4d4f', 22);
+        player.x = 60; player.y = 385; player.vx = 0; player.vy = 0;
+        if (life <= 0) show('💫 球球休息一下', '宝石一共收集了 ' + totalGems + ' 个。', '再来一次，球球一定可以冲到传送门！', '再来一次');
+        updateUI();
+    }
+    function nextLevel() {
+        burst(portal.x, portal.y, '#ffd43b', 34);
+        levelIndex++;
+        if (levelIndex >= levelData.length) {
+            show('🏆 球球通关啦！', '你帮球球完成了三座岛的大冒险！', '最终宝石：' + totalGems + '。可以再挑战一次更高分！', '重新开始');
+        } else {
+            show('✨ 进入下一关！', '下一站：' + levelData[levelIndex].name, '继续收集星星，打开金色传送门。', '继续冒险');
+        }
+    }
+    function update() {
+        const d = levelData[Math.min(levelIndex, levelData.length - 1)];
+        stars.forEach(s => s.bob += .08); gems.forEach(g => g.bob += .07); spikes.forEach(s => s.t += .05); portal.pulse += .08;
+        if (!running) return;
+        const left = keys.ArrowLeft || keys.a || keys.A, right = keys.ArrowRight || keys.d || keys.D;
+        const jumpNow = keys[' '] || keys.ArrowUp || keys.w || keys.W;
+        player.vx += (right ? .7 : 0) - (left ? .7 : 0);
+        player.vx *= .84; player.vx = Math.max(-7, Math.min(7, player.vx));
+        if (jumpNow && player.onGround) { player.vy = -13.5; player.onGround = false; burst(player.x, player.y + 18, '#ffffff', 8); }
+        player.vy += .65; player.x += player.vx; player.y += player.vy; player.spin += player.vx * .04;
+        if (player.x < player.r) { player.x = player.r; player.vx = 0; }
+        if (player.x > W-player.r) { player.x = W-player.r; player.vx = 0; }
+        if (player.y > 430-player.r) { player.y = 430-player.r; player.vy = 0; player.onGround = true; }
+        if (player.y < player.r) { player.y = player.r; player.vy = 0; }
+        if (player.inv > 0) player.inv -= 1/60;
+        stars.forEach(s => { if(!s.got && hit(player,s,38)){ s.got=true; burst(s.x,s.y,'#ffd43b',14); updateUI(); } });
+        gems.forEach(g => { if(!g.got && hit(player,g,40)){ g.got=true; totalGems++; burst(g.x,g.y,'#74c0fc',18); updateUI(); } });
+        spikes.forEach(s => { if(hit(player,s,38)) damage(); });
+        portal.open = stars.filter(s=>s.got).length >= d.need;
+        if (portal.open && hit(player, portal, 50)) { running = false; setTimeout(nextLevel, 350); }
+        particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .18; p.life -= .025; });
+        particles = particles.filter(p => p.life > 0);
+    }
+    function drawBall(x,y,r,emoji) {
+        ctx.save(); ctx.translate(x,y); ctx.rotate(player.spin || 0);
+        const grad = ctx.createRadialGradient(-8,-10,4,0,0,r); grad.addColorStop(0,'#f3d9fa'); grad.addColorStop(.5,'#cc5de8'); grad.addColorStop(1,'#7048e8');
+        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-8,-7,5,0,Math.PI*2); ctx.arc(9,-7,5,0,Math.PI*2); ctx.fill();
+        ctx.fillStyle = '#212529'; ctx.beginPath(); ctx.arc(-7,-7,2,0,Math.PI*2); ctx.arc(10,-7,2,0,Math.PI*2); ctx.fill();
+        ctx.strokeStyle = '#fff'; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0,4,9,0,Math.PI); ctx.stroke();
+        ctx.restore();
+    }
+    function render() {
+        const d = levelData[Math.min(levelIndex, levelData.length - 1)];
+        ctx.fillStyle = d.bg; ctx.fillRect(0,0,W,H);
+        ctx.fillStyle = 'rgba(255,255,255,.65)'; clouds.forEach(([x,y]) => { ctx.beginPath(); ctx.arc(x,y,24,0,7); ctx.arc(x+28,y-6,30,0,7); ctx.arc(x+62,y,22,0,7); ctx.fill(); });
+        ctx.fillStyle = '#4dabf7'; for(let i=0;i<7;i++){ ctx.beginPath(); ctx.arc(90+i*130, 454, 50, Math.PI, 0); ctx.fill(); }
+        ctx.fillStyle = '#2f9e44'; ctx.fillRect(0,430,W,88);
+        ctx.fillStyle = '#40c057'; for(let i=0;i<W;i+=38){ ctx.beginPath(); ctx.moveTo(i,430); ctx.lineTo(i+16,405); ctx.lineTo(i+34,430); ctx.fill(); }
+        stars.forEach(s => { if(s.got) return; const y=s.y+Math.sin(s.bob)*8; ctx.font='36px serif'; ctx.fillText('⭐',s.x-18,y+14); });
+        gems.forEach(g => { if(g.got) return; const y=g.y+Math.sin(g.bob)*7; ctx.font='38px serif'; ctx.fillText('💎',g.x-19,y+14); });
+        spikes.forEach(s => { const y=s.y+Math.sin(s.t)*3; ctx.font='42px serif'; ctx.fillText('🌵',s.x-21,y+15); });
+        ctx.save(); ctx.translate(portal.x, portal.y); ctx.scale(1+Math.sin(portal.pulse)*.06, 1+Math.sin(portal.pulse)*.06);
+        ctx.font='58px serif'; ctx.globalAlpha = portal.open ? 1 : .35; ctx.fillText('🌀',-29,20); ctx.restore();
+        if (!portal.open) { ctx.fillStyle='rgba(0,0,0,.45)'; ctx.font='bold 20px Arial'; ctx.fillText('还要星星！', portal.x-45, portal.y-45); }
+        if (player.inv <= 0 || Math.floor(player.inv*12)%2===0) drawBall(player.x, player.y, player.r);
+        particles.forEach(p => { ctx.globalAlpha = Math.max(0,p.life); ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x,p.y,4,0,7); ctx.fill(); ctx.globalAlpha = 1; });
+    }
+    function loop(){ update(); render(); requestAnimationFrame(loop); }
+    resetLevel(); loop();
+})();
+</script>
+</body>
+</html>
