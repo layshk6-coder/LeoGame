@@ -20,6 +20,8 @@
             margin: 8px 0; font-weight: 800; text-shadow: 0 2px 4px rgba(0,0,0,.25);
         }
         .pill { background: rgba(255,255,255,.2); border: 2px solid rgba(255,255,255,.35); border-radius: 999px; padding: 8px 10px; text-align: center; backdrop-filter: blur(8px); }
+        .mini-btn { margin-left: 6px; border: 0; border-radius: 999px; padding: 4px 8px; font-weight: 900; color: #5f3dc4; background: #ffd43b; cursor: pointer; }
+        .mini-btn:disabled { opacity: .45; filter: grayscale(1); cursor: not-allowed; }
         #wrap { position: relative; width: min(920px, 96vw); aspect-ratio: 16 / 9; max-height: 72vh; max-height: 72dvh; }
         canvas { width: 100%; height: 100%; display: block; border-radius: 22px; background: #91e6a7; box-shadow: 0 18px 60px rgba(0,0,0,.35); border: 5px solid rgba(255,255,255,.65); }
         #overlay {
@@ -45,7 +47,7 @@
         <div class="pill">🏁 第 <span id="level">1</span> 关</div>
         <div class="pill">⭐ 星星 <span id="stars">0</span>/<span id="need">0</span></div>
         <div class="pill">❤️ 生命 <span id="life">3</span></div>
-        <div class="pill">💎 宝石 <span id="gems">0</span> · 🟣 Lv.<span id="ball-level">1</span></div>
+        <div class="pill">💎 <span id="gems">0</span> · 🟣 Lv.<span id="ball-level">1</span><button id="upgrade" class="mini-btn">升级5💎</button></div>
     </div>
     <div id="wrap"><canvas id="game" width="920" height="518"></canvas></div>
     <div class="hint">电脑：方向键 / WASD 移动，空格跳跃。手机：左下角移动，右下角跳跃。</div>
@@ -53,7 +55,7 @@
         <div class="card">
             <h1 id="title">🟣 球球大冒险</h1>
             <p id="line1">收集星星开传送门，宝石失败也会保留。</p>
-            <p id="line2">第5关有尖刺，第20关有炮弹，第25关有炸弹；10个宝石升1级。</p>
+            <p id="line2">第5关有尖刺，第20关有炮弹，第25关有炸弹；点“升级5💎”会马上升1级。</p>
             <button class="btn" id="start">开始冒险</button>
         </div>
     </div>
@@ -68,19 +70,33 @@
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
     const ui = {
-        level: document.getElementById('level'), stars: document.getElementById('stars'), need: document.getElementById('need'), life: document.getElementById('life'), gems: document.getElementById('gems'), ballLevel: document.getElementById('ball-level'),
+        level: document.getElementById('level'), stars: document.getElementById('stars'), need: document.getElementById('need'), life: document.getElementById('life'), gems: document.getElementById('gems'), ballLevel: document.getElementById('ball-level'), upgrade: document.getElementById('upgrade'),
         overlay: document.getElementById('overlay'), title: document.getElementById('title'), line1: document.getElementById('line1'), line2: document.getElementById('line2'), start: document.getElementById('start')
     };
     const keys = {};
     const STORAGE_KEY = 'ball-adventure-gems-v1';
+    const LEVEL_KEY = 'ball-adventure-level-v2';
+    const UPGRADE_COST = 5;
     function loadSavedGems() {
         try {
             const saved = Number(localStorage.getItem(STORAGE_KEY) || '0');
             return Number.isFinite(saved) && saved > 0 ? Math.floor(saved) : 0;
         } catch (e) { return 0; }
     }
-    function saveGems() { try { localStorage.setItem(STORAGE_KEY, String(totalGems)); } catch (e) {} }
-    function ballLevel() { return 1 + Math.floor(totalGems / 10); }
+    function loadSavedLevel() {
+        try {
+            const saved = Number(localStorage.getItem(LEVEL_KEY) || '1');
+            return Number.isFinite(saved) && saved > 1 ? Math.floor(saved) : 1;
+        } catch (e) { return 1; }
+    }
+    function saveProgress() {
+        try {
+            localStorage.setItem(STORAGE_KEY, String(totalGems));
+            localStorage.setItem(LEVEL_KEY, String(playerLevel));
+        } catch (e) {}
+    }
+    function saveGems() { saveProgress(); }
+    function ballLevel() { return playerLevel; }
     function spikeImmune() { return ballLevel() >= 10; }
     function cannonImmune() { return ballLevel() >= 50; }
     function hasBodySpikes() { return spikeImmune(); }
@@ -101,7 +117,7 @@
         return { name: baseName + ' ' + n, bg, need: starCount, stars, gems, spikes, cannons, bombs, clouds:[[160+(n*11)%120,90],[610+(n*7)%130,80+(n%3)*18]], portal:[850,380] };
     }
     const levelData = Array.from({length: 100}, (_, i) => makeLevel(i + 1));
-    let levelIndex = 0, life = 3, totalGems = loadSavedGems(), running = false;
+    let levelIndex = 0, life = 3, totalGems = loadSavedGems(), playerLevel = loadSavedLevel(), running = false;
     let player, stars, gems, spikes, cannons, bombs, portal, clouds, particles;
 
     function resetLevel(keepPlayer=false) {
@@ -124,6 +140,7 @@
         ui.life.textContent = life;
         ui.gems.textContent = totalGems;
         ui.ballLevel.textContent = ballLevel();
+        ui.upgrade.disabled = totalGems < UPGRADE_COST;
     }
     function show(title, a, b, btn='开始冒险') {
         running = false; ui.title.textContent = title; ui.line1.textContent = a; ui.line2.textContent = b; ui.start.textContent = btn; ui.overlay.classList.remove('hidden');
@@ -133,6 +150,14 @@
         resetLevel(); running = true; ui.overlay.classList.add('hidden');
     }
     ui.start.addEventListener('click', startGame);
+    ui.upgrade.addEventListener('click', () => {
+        if (totalGems < UPGRADE_COST) return;
+        totalGems -= UPGRADE_COST;
+        playerLevel++;
+        saveProgress();
+        burst(player ? player.x : W/2, player ? player.y : H/2, '#ffd43b', 36);
+        updateUI();
+    });
 
     document.addEventListener('keydown', e => { keys[e.key] = true; if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' '].includes(e.key)) e.preventDefault(); });
     document.addEventListener('keyup', e => { keys[e.key] = false; });
@@ -151,7 +176,7 @@
         if (player.inv > 0) return;
         life--; player.inv = 1.4; burst(player.x, player.y, '#ff4d4f', 22);
         player.x = 60; player.y = 385; player.vx = 0; player.vy = 0;
-        if (life <= 0) show('💫 球球休息一下', '宝石保留了：' + totalGems + ' 个，球球 Lv.' + ballLevel() + '。', spikeImmune() ? (cannonImmune() ? '你已经不怕尖刺和炮弹，小心炸弹！' : '你已经不怕尖刺，Lv.50 后不怕炮弹！') : '每 10 个宝石升 1 级，Lv.10 后不怕尖刺。', '再来一次');
+        if (life <= 0) show('💫 球球休息一下', '宝石保留了：' + totalGems + ' 个，球球 Lv.' + ballLevel() + '。', spikeImmune() ? (cannonImmune() ? '你已经不怕尖刺和炮弹，小心炸弹！' : '你已经不怕尖刺，Lv.50 后不怕炮弹！') : '点“升级5💎”升到 Lv.10 后不怕尖刺。', '再来一次');
         updateUI();
     }
     function nextLevel() {
