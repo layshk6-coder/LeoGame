@@ -45,7 +45,7 @@
         <div class="pill">🏁 第 <span id="level">1</span> 关</div>
         <div class="pill">⭐ 星星 <span id="stars">0</span>/<span id="need">0</span></div>
         <div class="pill">❤️ 生命 <span id="life">3</span></div>
-        <div class="pill">💎 宝石 <span id="gems">0</span></div>
+        <div class="pill">💎 宝石 <span id="gems">0</span> · 🟣 Lv.<span id="ball-level">1</span></div>
     </div>
     <div id="wrap"><canvas id="game" width="920" height="518"></canvas></div>
     <div class="hint">电脑：方向键 / WASD 移动，空格跳跃。手机：左下角移动，右下角跳跃。</div>
@@ -53,7 +53,7 @@
         <div class="card">
             <h1 id="title">🟣 球球大冒险</h1>
             <p id="line1">帮助小球球滚过彩虹岛，收集星星和宝石。</p>
-            <p id="line2">躲开刺刺怪，找到金色传送门！</p>
+            <p id="line2">宝石失败也保留；升到 5 级后，球球会长出尖刺！</p>
             <button class="btn" id="start">开始冒险</button>
         </div>
     </div>
@@ -68,17 +68,27 @@
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
     const ui = {
-        level: document.getElementById('level'), stars: document.getElementById('stars'), need: document.getElementById('need'), life: document.getElementById('life'), gems: document.getElementById('gems'),
+        level: document.getElementById('level'), stars: document.getElementById('stars'), need: document.getElementById('need'), life: document.getElementById('life'), gems: document.getElementById('gems'), ballLevel: document.getElementById('ball-level'),
         overlay: document.getElementById('overlay'), title: document.getElementById('title'), line1: document.getElementById('line1'), line2: document.getElementById('line2'), start: document.getElementById('start')
     };
     const keys = {};
+    const STORAGE_KEY = 'ball-adventure-gems-v1';
+    function loadSavedGems() {
+        try {
+            const saved = Number(localStorage.getItem(STORAGE_KEY) || '0');
+            return Number.isFinite(saved) && saved > 0 ? Math.floor(saved) : 0;
+        } catch (e) { return 0; }
+    }
+    function saveGems() { try { localStorage.setItem(STORAGE_KEY, String(totalGems)); } catch (e) {} }
+    function ballLevel() { return Math.min(9, 1 + Math.floor(totalGems)); }
+    function hasBodySpikes() { return ballLevel() >= 5; }
     const levelData = [
         // 只做地面跳跃关卡：球球最高大约跳到 y=266，所以星星/宝石都放在 y>=300，保证能碰到。
         { name:'彩虹草地', bg:'#91e6a7', need:5, stars:[[150,368],[275,330],[430,305],[610,358],[775,325]], gems:[[520,300]], spikes:[[350,430],[700,430]], clouds:[[170,90],[690,75]], portal:[850,380] },
         { name:'糖果山谷', bg:'#ffd8a8', need:7, stars:[[105,365],[215,330],[330,305],[455,350],[570,315],[685,355],[800,325]], gems:[[385,300],[735,305]], spikes:[[245,430],[505,430],[760,430]], clouds:[[260,90],[590,105]], portal:[850,360] },
         { name:'星星城堡', bg:'#a5d8ff', need:9, stars:[[100,355],[190,320],[295,365],[380,305],[490,345],[600,315],[690,365],[780,325],[845,305]], gems:[[250,305],[540,300],[820,355]], spikes:[[180,430],[420,430],[635,430],[820,430]], clouds:[[150,100],[480,75],[760,90]], portal:[850,370] }
     ];
-    let levelIndex = 0, life = 3, totalGems = 0, running = false, winTimer = 0;
+    let levelIndex = 0, life = 3, totalGems = loadSavedGems(), running = false, winTimer = 0;
     let player, stars, gems, spikes, portal, clouds, particles;
 
     function resetLevel(keepPlayer=false) {
@@ -87,7 +97,7 @@
         player.x = 60; player.y = 385; player.vx = 0; player.vy = 0; player.inv = 1;
         stars = d.stars.map(([x,y]) => ({x,y, got:false, bob:Math.random()*9}));
         gems = d.gems.map(([x,y]) => ({x,y, got:false, bob:Math.random()*9}));
-        spikes = d.spikes.map(([x,y]) => ({x,y, t:Math.random()*6}));
+        spikes = d.spikes.map(([x,y]) => ({x,y, t:Math.random()*6, broken:false}));
         portal = { x:d.portal[0], y:d.portal[1], open:false, pulse:0 };
         clouds = d.clouds; particles = [];
         updateUI();
@@ -98,12 +108,13 @@
         ui.need.textContent = levelData[levelIndex].need;
         ui.life.textContent = life;
         ui.gems.textContent = totalGems;
+        ui.ballLevel.textContent = ballLevel();
     }
     function show(title, a, b, btn='开始冒险') {
         running = false; ui.title.textContent = title; ui.line1.textContent = a; ui.line2.textContent = b; ui.start.textContent = btn; ui.overlay.classList.remove('hidden');
     }
     function startGame() {
-        if (life <= 0 || levelIndex >= levelData.length) { levelIndex = 0; life = 3; totalGems = 0; }
+        if (life <= 0 || levelIndex >= levelData.length) { levelIndex = 0; life = 3; }
         resetLevel(); running = true; ui.overlay.classList.add('hidden');
     }
     ui.start.addEventListener('click', startGame);
@@ -125,14 +136,14 @@
         if (player.inv > 0) return;
         life--; player.inv = 1.4; burst(player.x, player.y, '#ff4d4f', 22);
         player.x = 60; player.y = 385; player.vx = 0; player.vy = 0;
-        if (life <= 0) show('💫 球球休息一下', '宝石一共收集了 ' + totalGems + ' 个。', '再来一次，球球一定可以冲到传送门！', '再来一次');
+        if (life <= 0) show('💫 球球休息一下', '宝石保留了：' + totalGems + ' 个，球球 Lv.' + ballLevel() + '。', hasBodySpikes() ? '再来一次，尖刺球球可以撞碎刺刺怪！' : '再收集宝石，升到 Lv.5 就会长出尖刺！', '再来一次');
         updateUI();
     }
     function nextLevel() {
         burst(portal.x, portal.y, '#ffd43b', 34);
         levelIndex++;
         if (levelIndex >= levelData.length) {
-            show('🏆 球球通关啦！', '你帮球球完成了三座岛的大冒险！', '最终宝石：' + totalGems + '。可以再挑战一次更高分！', '重新开始');
+            show('🏆 球球通关啦！', '你帮球球完成了三座岛的大冒险！', '宝石保留：' + totalGems + ' 个，球球 Lv.' + ballLevel() + '。', '重新开始');
         } else {
             show('✨ 进入下一关！', '下一站：' + levelData[levelIndex].name, '继续收集星星，打开金色传送门。', '继续冒险');
         }
@@ -153,8 +164,14 @@
         if (player.y < player.r) { player.y = player.r; player.vy = 0; }
         if (player.inv > 0) player.inv -= 1/60;
         stars.forEach(s => { if(!s.got && hit(player,s,38)){ s.got=true; burst(s.x,s.y,'#ffd43b',14); updateUI(); } });
-        gems.forEach(g => { if(!g.got && hit(player,g,40)){ g.got=true; totalGems++; burst(g.x,g.y,'#74c0fc',18); updateUI(); } });
-        spikes.forEach(s => { if(hit(player,s,38)) damage(); });
+        gems.forEach(g => { if(!g.got && hit(player,g,40)){ g.got=true; totalGems++; saveGems(); burst(g.x,g.y,'#74c0fc',18); if (hasBodySpikes()) burst(player.x, player.y, '#ffd43b', 22); updateUI(); } });
+        spikes.forEach(s => {
+            if (s.broken) return;
+            if (hit(player,s,38)) {
+                if (hasBodySpikes()) { s.broken = true; burst(s.x, s.y, '#ffd43b', 24); }
+                else damage();
+            }
+        });
         portal.open = stars.filter(s=>s.got).length >= d.need;
         if (portal.open && hit(player, portal, 50)) { running = false; setTimeout(nextLevel, 350); }
         particles.forEach(p => { p.x += p.vx; p.y += p.vy; p.vy += .18; p.life -= .025; });
@@ -162,6 +179,18 @@
     }
     function drawBall(x,y,r,emoji) {
         ctx.save(); ctx.translate(x,y); ctx.rotate(player.spin || 0);
+        if (hasBodySpikes()) {
+            ctx.fillStyle = '#ffd43b'; ctx.strokeStyle = '#5f3dc4'; ctx.lineWidth = 2;
+            for (let i = 0; i < 12; i++) {
+                const a = i * Math.PI * 2 / 12;
+                const left = a - 0.12, right = a + 0.12;
+                ctx.beginPath();
+                ctx.moveTo(Math.cos(a) * (r + 13), Math.sin(a) * (r + 13));
+                ctx.lineTo(Math.cos(left) * (r - 2), Math.sin(left) * (r - 2));
+                ctx.lineTo(Math.cos(right) * (r - 2), Math.sin(right) * (r - 2));
+                ctx.closePath(); ctx.fill(); ctx.stroke();
+            }
+        }
         const grad = ctx.createRadialGradient(-8,-10,4,0,0,r); grad.addColorStop(0,'#f3d9fa'); grad.addColorStop(.5,'#cc5de8'); grad.addColorStop(1,'#7048e8');
         ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(0,0,r,0,Math.PI*2); ctx.fill();
         ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(-8,-7,5,0,Math.PI*2); ctx.arc(9,-7,5,0,Math.PI*2); ctx.fill();
@@ -178,7 +207,7 @@
         ctx.fillStyle = '#40c057'; for(let i=0;i<W;i+=38){ ctx.beginPath(); ctx.moveTo(i,430); ctx.lineTo(i+16,405); ctx.lineTo(i+34,430); ctx.fill(); }
         stars.forEach(s => { if(s.got) return; const y=s.y+Math.sin(s.bob)*8; ctx.font='36px serif'; ctx.fillText('⭐',s.x-18,y+14); });
         gems.forEach(g => { if(g.got) return; const y=g.y+Math.sin(g.bob)*7; ctx.font='38px serif'; ctx.fillText('💎',g.x-19,y+14); });
-        spikes.forEach(s => { const y=s.y+Math.sin(s.t)*3; ctx.font='42px serif'; ctx.fillText('🌵',s.x-21,y+15); });
+        spikes.forEach(s => { if (s.broken) return; const y=s.y+Math.sin(s.t)*3; ctx.font='42px serif'; ctx.fillText('🌵',s.x-21,y+15); });
         ctx.save(); ctx.translate(portal.x, portal.y); ctx.scale(1+Math.sin(portal.pulse)*.06, 1+Math.sin(portal.pulse)*.06);
         ctx.font='58px serif'; ctx.globalAlpha = portal.open ? 1 : .35; ctx.fillText('🌀',-29,20); ctx.restore();
         if (!portal.open) { ctx.fillStyle='rgba(0,0,0,.45)'; ctx.font='bold 20px Arial'; ctx.fillText('还要星星！', portal.x-45, portal.y-45); }
