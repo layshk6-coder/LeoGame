@@ -55,7 +55,7 @@
         <div class="card">
             <h1 id="title">🟣 球球大冒险</h1>
             <p id="line1">收集星星开传送门，宝石失败也会保留。</p>
-            <p id="line2">第5关有尖刺，第20关有炮弹，第25关有炸弹；球球 Lv.5 身上长尖刺。</p>
+            <p id="line2">仙人掌从第1关就有；真正的尖刺从第5关开始，球球 Lv.5 身上长尖刺。</p>
             <button class="btn" id="start">开始冒险</button>
         </div>
     </div>
@@ -111,14 +111,15 @@
         const laneY = [368,350,330,315,305];
         const stars = Array.from({length: starCount}, (_, i) => [90 + (i * 70 + (n * 23) % 38) % 760, laneY[(i+n)%laneY.length]]);
         const gems = Array.from({length: gemCount}, (_, i) => [140 + (i * 150 + n * 41) % 690, laneY[(i*2+n)%laneY.length] - 8]);
-        const spikes = n >= 5 ? Array.from({length: Math.min(6, 2 + Math.floor((n-5)/5))}, (_, i) => [170 + (i * 145 + n * 29) % 650, 430]) : [];
+        const cacti = Array.from({length: Math.min(5, 1 + Math.floor((n-1)/8))}, (_, i) => [135 + (i * 180 + n * 31) % 690, 430]);
+        const spikes = n >= 5 ? Array.from({length: Math.min(6, 2 + Math.floor((n-5)/5))}, (_, i) => [210 + (i * 135 + n * 29) % 610, 430]) : [];
         const cannons = n >= 20 ? Array.from({length: Math.min(4, 1 + Math.floor((n-20)/8))}, (_, i) => ({x: (i % 2 ? 890 : 30), y: 285 + ((i*53+n*17)%110), dir: (i % 2 ? -1 : 1), phase: i*1.4})) : [];
         const bombs = n >= 25 ? Array.from({length: Math.min(5, 1 + Math.floor((n-25)/6))}, (_, i) => [190 + (i * 160 + n * 37) % 620, 405]) : [];
-        return { name: baseName + ' ' + n, bg, need: starCount, stars, gems, spikes, cannons, bombs, clouds:[[160+(n*11)%120,90],[610+(n*7)%130,80+(n%3)*18]], portal:[850,380] };
+        return { name: baseName + ' ' + n, bg, need: starCount, stars, gems, cacti, spikes, cannons, bombs, clouds:[[160+(n*11)%120,90],[610+(n*7)%130,80+(n%3)*18]], portal:[850,380] };
     }
     const levelData = Array.from({length: 100}, (_, i) => makeLevel(i + 1));
     let levelIndex = 0, life = 3, totalGems = loadSavedGems(), playerLevel = loadSavedLevel(), running = false;
-    let player, stars, gems, spikes, cannons, bombs, portal, clouds, particles;
+    let player, stars, gems, cacti, spikes, cannons, bombs, portal, clouds, particles;
 
     function resetLevel(keepPlayer=false) {
         const d = levelData[levelIndex];
@@ -126,6 +127,7 @@
         player.x = 60; player.y = 385; player.vx = 0; player.vy = 0; player.inv = 1;
         stars = d.stars.map(([x,y]) => ({x,y, got:false, bob:Math.random()*9}));
         gems = d.gems.map(([x,y]) => ({x,y, got:false, bob:Math.random()*9}));
+        cacti = d.cacti.map(([x,y]) => ({x,y, t:Math.random()*6}));
         spikes = d.spikes.map(([x,y]) => ({x,y, t:Math.random()*6, broken:false}));
         cannons = (d.cannons || []).map(c => ({...c, x:c.x, cooldown:c.phase || 0, bullets:[]}));
         bombs = (d.bombs || []).map(([x,y]) => ({x,y, t:Math.random()*6, boom:false}));
@@ -190,7 +192,7 @@
     }
     function update() {
         const d = levelData[Math.min(levelIndex, levelData.length - 1)];
-        stars.forEach(s => s.bob += .08); gems.forEach(g => g.bob += .07); spikes.forEach(s => s.t += .05); bombs.forEach(b => b.t += .06); portal.pulse += .08;
+        stars.forEach(s => s.bob += .08); gems.forEach(g => g.bob += .07); cacti.forEach(c => c.t += .04); spikes.forEach(s => s.t += .05); bombs.forEach(b => b.t += .06); portal.pulse += .08;
         if (!running) return;
         const left = keys.ArrowLeft || keys.a || keys.A, right = keys.ArrowRight || keys.d || keys.D;
         const jumpNow = keys[' '] || keys.ArrowUp || keys.w || keys.W;
@@ -205,6 +207,7 @@
         if (player.inv > 0) player.inv -= 1/60;
         stars.forEach(s => { if(!s.got && hit(player,s,38)){ s.got=true; burst(s.x,s.y,'#ffd43b',14); updateUI(); } });
         gems.forEach(g => { if(!g.got && hit(player,g,40)){ g.got=true; totalGems++; saveGems(); burst(g.x,g.y,'#74c0fc',18); if (spikeImmune()) burst(player.x, player.y, '#ffd43b', 22); updateUI(); } });
+        cacti.forEach(c => { if (hit(player,c,36)) damage(); });
         spikes.forEach(s => {
             if (s.broken) return;
             if (hit(player,s,38)) {
@@ -255,7 +258,8 @@
         ctx.fillStyle = '#40c057'; for(let i=0;i<W;i+=38){ ctx.beginPath(); ctx.moveTo(i,430); ctx.lineTo(i+16,405); ctx.lineTo(i+34,430); ctx.fill(); }
         stars.forEach(s => { if(s.got) return; const y=s.y+Math.sin(s.bob)*8; ctx.font='36px serif'; ctx.fillText('⭐',s.x-18,y+14); });
         gems.forEach(g => { if(g.got) return; const y=g.y+Math.sin(g.bob)*7; ctx.font='38px serif'; ctx.fillText('💎',g.x-19,y+14); });
-        spikes.forEach(s => { if (s.broken) return; const y=s.y+Math.sin(s.t)*3; ctx.font='42px serif'; ctx.fillText('🌵',s.x-21,y+15); });
+        cacti.forEach(c => { const y=c.y+Math.sin(c.t)*3; ctx.font='42px serif'; ctx.fillText('🌵',c.x-21,y+15); });
+        spikes.forEach(s => { if (s.broken) return; const y=s.y+Math.sin(s.t)*3; ctx.font='40px serif'; ctx.fillText('🔺',s.x-20,y+15); });
         cannons.forEach(c => { ctx.font='34px serif'; ctx.fillText(c.dir > 0 ? '👉' : '👈', c.x-18, c.y+12); c.bullets.forEach(b => { ctx.font='30px serif'; ctx.fillText('⚫', b.x-15, b.y+12); }); });
         bombs.forEach(b => { if (b.boom) return; const y=b.y+Math.sin(b.t)*4; ctx.font='36px serif'; ctx.fillText('💣', b.x-18, y+12); });
         ctx.save(); ctx.translate(portal.x, portal.y); ctx.scale(1+Math.sin(portal.pulse)*.06, 1+Math.sin(portal.pulse)*.06);
