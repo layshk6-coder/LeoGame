@@ -47,10 +47,10 @@
         <div class="pill">🏁 第 <span id="level">1</span> 关</div>
         <div class="pill">⭐ 星星 <span id="stars">0</span>/<span id="need">0</span></div>
         <div class="pill">❤️ 生命 <span id="life">3</span></div>
-        <div class="pill">💎 <span id="gems">0</span> · 🟣 Lv.<span id="ball-level">1</span><button id="upgrade" class="mini-btn">升级5💎</button></div>
+        <div class="pill">💎 <span id="gems">0</span> · 🟣 Lv.<span id="ball-level">1</span> · <span id="power">普通</span><button id="upgrade" class="mini-btn">升级5💎</button></div>
     </div>
     <div id="wrap"><canvas id="game" width="920" height="518"></canvas></div>
-    <div class="hint">电脑：方向键 / WASD 移动，空格跳跃。手机：左下角移动，右下角跳跃。</div>
+    <div class="hint">电脑：方向键 / WASD 移动，空格跳跃。手机：左下角移动，右下角跳跃。版本：仙人掌/尖刺分离 + Lv.5长尖刺。</div>
     <div id="overlay">
         <div class="card">
             <h1 id="title">🟣 球球大冒险</h1>
@@ -70,7 +70,7 @@
     const ctx = canvas.getContext('2d');
     const W = canvas.width, H = canvas.height;
     const ui = {
-        level: document.getElementById('level'), stars: document.getElementById('stars'), need: document.getElementById('need'), life: document.getElementById('life'), gems: document.getElementById('gems'), ballLevel: document.getElementById('ball-level'), upgrade: document.getElementById('upgrade'),
+        level: document.getElementById('level'), stars: document.getElementById('stars'), need: document.getElementById('need'), life: document.getElementById('life'), gems: document.getElementById('gems'), ballLevel: document.getElementById('ball-level'), power: document.getElementById('power'), upgrade: document.getElementById('upgrade'),
         overlay: document.getElementById('overlay'), title: document.getElementById('title'), line1: document.getElementById('line1'), line2: document.getElementById('line2'), start: document.getElementById('start')
     };
     const keys = {};
@@ -86,7 +86,8 @@
     function loadSavedLevel() {
         try {
             const saved = Number(localStorage.getItem(LEVEL_KEY) || '1');
-            return Number.isFinite(saved) && saved > 1 ? Math.floor(saved) : 1;
+            const oldGemLevel = 1 + Math.floor(loadSavedGems() / 10);
+            return Math.max(1, Number.isFinite(saved) ? Math.floor(saved) : 1, oldGemLevel);
         } catch (e) { return 1; }
     }
     function saveProgress() {
@@ -142,6 +143,7 @@
         ui.life.textContent = life;
         ui.gems.textContent = totalGems;
         ui.ballLevel.textContent = ballLevel();
+        ui.power.textContent = cannonImmune() ? '抗炮弹' : (spikeImmune() ? '抗尖刺' : (hasBodySpikes() ? '长尖刺' : '普通'));
         ui.upgrade.disabled = totalGems < UPGRADE_COST;
     }
     function show(title, a, b, btn='开始冒险') {
