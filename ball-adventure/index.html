@@ -55,7 +55,7 @@
         <div class="card">
             <h1 id="title">🟣 球球大冒险</h1>
             <p id="line1">收集星星开传送门，宝石失败也会保留。</p>
-            <p id="line2">第5关有尖刺，第20关有炮弹，第25关有炸弹；点“升级5💎”会马上升1级。</p>
+            <p id="line2">第5关有尖刺，第20关有炮弹，第25关有炸弹；球球 Lv.5 身上长尖刺。</p>
             <button class="btn" id="start">开始冒险</button>
         </div>
     </div>
@@ -99,7 +99,7 @@
     function ballLevel() { return playerLevel; }
     function spikeImmune() { return ballLevel() >= 10; }
     function cannonImmune() { return ballLevel() >= 50; }
-    function hasBodySpikes() { return spikeImmune(); }
+    function hasBodySpikes() { return ballLevel() >= 5; }
     function makeLevel(n) {
         const palettes = [
             ['彩虹草地','#91e6a7'], ['糖果山谷','#ffd8a8'], ['星星城堡','#a5d8ff'], ['宝石海岸','#99e9f2'],
