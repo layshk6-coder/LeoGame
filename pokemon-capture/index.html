@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-  <title>Leo 宝可梦训练家冒险 v0.1</title>
+  <title>Leo 宝可梦训练家冒险 v0.2</title>
   <style>
     :root { --blue:#178bff; --yellow:#ffd43b; --red:#f04444; --ink:#17314c; }
     * { box-sizing:border-box; margin:0; padding:0; }
@@ -50,7 +50,15 @@
     .starter { display:grid; grid-template-columns:44px 1fr; align-items:center; gap:7px; padding:8px; border-radius:13px; background:#edf8ff; border:2px solid #c9e9ff; }
     .starter .icon { font-size:32px; }
     .starter small { display:block; color:#547086; }
-    .team { min-height:70px; display:grid; gap:6px; }
+    .ball-bag { display:grid; grid-template-columns:repeat(2,1fr); gap:7px; margin-bottom:12px; }
+    .ball-choice { border:3px solid transparent; border-radius:13px; padding:8px 4px; background:#eef4f8; color:#29455e; font-weight:900; cursor:pointer; }
+    .ball-choice.selected { border-color:#168cff; background:#dff2ff; box-shadow:0 3px 0 #85c8f4; }
+    .ball-choice:disabled { opacity:.38; filter:grayscale(1); }
+    .ball-icon { display:inline-block; width:21px; height:21px; margin-right:3px; vertical-align:middle; border:2px solid #222; border-radius:50%; background:linear-gradient(#ef3d3d 0 45%,#222 45% 57%,#fff 57%); }
+    [data-ball="great"] .ball-icon { background:linear-gradient(#3c7fe8 0 45%,#d83232 45% 57%,#fff 57%); }
+    [data-ball="ultra"] .ball-icon { background:linear-gradient(135deg,#f2d12d 0 25%,#242424 25% 48%,#f2d12d 48% 62%,#242424 62% 72%,#fff 72%); }
+    [data-ball="master"] .ball-icon { background:linear-gradient(#9b52cc 0 45%,#e94f9d 45% 57%,#fff 57%); }
+    .team { min-height:70px; max-height:190px; overflow-y:auto; display:grid; gap:6px; }
     .empty { color:#73869a; padding:12px; text-align:center; border:2px dashed #b8c6d4; border-radius:12px; }
     .member { display:flex; align-items:center; gap:8px; background:#fff7d7; border:2px solid #f5d553; border-radius:12px; padding:7px; }
     .member span:first-child { font-size:30px; }
@@ -61,15 +69,15 @@
     #toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8); z-index:30; padding:18px 25px; border-radius:18px; background:rgba(16,41,62,.94); color:white; font-size:22px; font-weight:900; text-align:center; opacity:0; pointer-events:none; transition:.2s; }
     #toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
     .hidden { display:none!important; }
-    @media(max-width:720px){ main{grid-template-columns:1fr}.arena{min-height:450px}.panel{padding:11px}.starter-list{grid-template-columns:repeat(3,1fr)}.starter{display:block;text-align:center}.starter small{font-size:10px}.trainer{left:2%;transform:scale(.83)} #throw-btn{width:112px;height:64px;font-size:16px} }
+    @media(max-width:720px){ main{grid-template-columns:1fr}.arena{min-height:450px}.panel{padding:11px}.starter-list{grid-template-columns:repeat(3,1fr)}.starter{display:block;text-align:center}.starter small{font-size:10px}.trainer{left:2%;transform:scale(.83)} #throw-btn{width:112px;height:64px;font-size:16px}.ball-bag{grid-template-columns:repeat(4,1fr)}.ball-choice{font-size:11px;padding:7px 1px}.ball-icon{display:block;margin:0 auto 3px} }
     @media(max-width:520px){ header{flex-direction:column;align-items:stretch} header h1{font-size:25px;line-height:1.15} .version{display:inline-block;margin-top:6px;white-space:nowrap;font-size:11px}.hud{justify-content:space-between}.chip{flex:1;text-align:center;padding:7px 5px} }
   </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <div><h1>⚡ Leo 宝可梦训练家冒险</h1><span class="version">试玩版 v0.1 · 中央2秒捕捉</span></div>
-    <div class="hud"><span class="chip">⚪ 精灵球 <b id="ball-count">∞</b></span><span class="chip">👥 队伍 <b id="team-count">0</b>/3</span></div>
+    <div><h1>⚡ Leo 宝可梦训练家冒险</h1><span class="version">试玩版 v0.2 · 四种精灵球</span></div>
+    <div class="hud"><span class="chip">📚 已收服 <b id="team-count">0</b>只</span></div>
   </header>
   <main>
     <section class="arena" aria-label="捕捉区域">
@@ -82,7 +90,14 @@
     <aside class="panel">
       <h2>🌿 本区可能出现</h2>
       <div class="starter-list" id="starter-list"></div>
-      <h2>🎒 小智的队伍</h2>
+      <h2>🎒 选择精灵球</h2>
+      <div class="ball-bag" id="ball-bag">
+        <button class="ball-choice selected" data-ball="poke"><i class="ball-icon"></i>精灵球 ×<span class="ball-qty">100</span></button>
+        <button class="ball-choice" data-ball="great"><i class="ball-icon"></i>超级球 ×<span class="ball-qty">10</span></button>
+        <button class="ball-choice" data-ball="ultra"><i class="ball-icon"></i>高级球 ×<span class="ball-qty">5</span></button>
+        <button class="ball-choice" data-ball="master"><i class="ball-icon"></i>大师球 ×<span class="ball-qty">1</span></button>
+      </div>
+      <h2>📚 我的宝可梦收藏</h2>
       <div class="team" id="team"><div class="empty">还没有宝可梦<br>先去捕捉第一只吧！</div></div>
       <h2>🏆 已解锁比赛</h2>
       <div class="modes"><button class="mode" data-mode="1" disabled>一打一</button><button class="mode" data-mode="2" disabled>二打二</button><button class="mode" data-mode="3" disabled>三打三</button></div>
@@ -101,17 +116,32 @@
     {id:'charmander',name:'小火龙',icon:'🔥',level:1,ability:'猛火增强',color:'#ff9a43'},
     {id:'squirtle',name:'杰尼龟',icon:'💧',level:1,ability:'龟壳防御',color:'#62c8ef'}
   ];
+  const BALLS = {
+    poke:{name:'精灵球',rate:.70,start:100},
+    great:{name:'超级球',rate:.85,start:10},
+    ultra:{name:'高级球',rate:.95,start:5},
+    master:{name:'大师球',rate:1,start:1}
+  };
   const POSITIONS = [
     {x:12,y:25,center:false},{x:70,y:20,center:false},{x:73,y:66,center:false},
     {x:45,y:48,center:true},{x:20,y:65,center:false},{x:48,y:18,center:false}
   ];
   const el = id => document.getElementById(id);
   const pokemonEl=el('pokemon'), throwBtn=el('throw-btn'), startBtn=el('start-btn'), message=el('center-message');
-  let team = loadTeam(), running=false, centered=false, moveTimer=null, centerTimer=null, current=null, posIndex=0, forcedCatch=false;
+  let team = loadTeam(), balls = loadBalls(), selectedBall='poke', running=false, centered=false, moveTimer=null, centerTimer=null, current=null, posIndex=0, forcedCatch=false;
 
-  function loadTeam(){ try { return JSON.parse(localStorage.getItem('leo-pokemon-team')||'[]').filter(id=>POKEMON.some(p=>p.id===id)).slice(0,3); } catch { return []; } }
+  function loadTeam(){ try { return JSON.parse(localStorage.getItem('leo-pokemon-team')||'[]').filter(id=>POKEMON.some(p=>p.id===id)); } catch { return []; } }
   function saveTeam(){ try { localStorage.setItem('leo-pokemon-team',JSON.stringify(team)); } catch {} }
-  function randomPokemon(){ const available=POKEMON.filter(p=>!team.includes(p.id)); const pool=available.length?available:POKEMON; return pool[Math.floor(Math.random()*pool.length)]; }
+  function loadBalls(){
+    const defaults=Object.fromEntries(Object.entries(BALLS).map(([id,b])=>[id,b.start]));
+    try {
+      const saved=JSON.parse(localStorage.getItem('leo-pokemon-balls')||'null');
+      if(!saved){ localStorage.setItem('leo-pokemon-balls',JSON.stringify(defaults)); return defaults; }
+      return Object.fromEntries(Object.keys(BALLS).map(id=>[id,Math.max(0,Number.isFinite(saved[id])?Math.floor(saved[id]):defaults[id])]));
+    } catch { return defaults; }
+  }
+  function saveBalls(){ try { localStorage.setItem('leo-pokemon-balls',JSON.stringify(balls)); } catch {} }
+  function randomPokemon(){ return POKEMON[Math.floor(Math.random()*POKEMON.length)]; }
   function showPokemon(p){ current=p; pokemonEl.querySelector('.poke-sprite').textContent=p.icon; pokemonEl.querySelector('.poke-label').textContent=`${p.name} Lv.${p.level}`; pokemonEl.classList.remove('hidden'); }
   function moveTo(position,instant=false){
     clearTimeout(moveTimer); clearTimeout(centerTimer); centered=false; throwBtn.disabled=true;
@@ -138,22 +168,25 @@
   }
   function throwBall(){
     if(!centered||!running) return;
+    if(balls[selectedBall]<=0){ showToast(`${BALLS[selectedBall].name}已经用完了！`); renderBalls(); return; }
+    const thrownBall=selectedBall;
+    balls[thrownBall]--; saveBalls(); renderBalls();
     centered=false; throwBtn.disabled=true; clearTimeout(centerTimer);
     const ball=document.createElement('div'); ball.className='ball'; ball.style.left='82%'; ball.style.top='78%'; document.querySelector('.arena').appendChild(ball);
     requestAnimationFrame(()=>{ ball.style.left='49%'; ball.style.top='54%'; ball.style.transform='rotate(540deg) scale(.75)'; });
     setTimeout(()=>{
-      const success=forcedCatch || team.length===0 || Math.random()<.82; forcedCatch=false;
+      const success=forcedCatch || Math.random()<BALLS[thrownBall].rate; forcedCatch=false;
       ball.remove();
       if(success){ catchCurrent(); } else { showToast('挣脱了！再试一次！'); message.textContent=`💨 ${current.name}挣脱了精灵球！`; setTimeout(nextMove,900); }
     },500);
   }
   function catchCurrent(){
     const first=!team.length;
-    if(!team.includes(current.id) && team.length<3) team.push(current.id);
+    team.push(current.id);
     saveTeam(); renderTeam(); pokemonEl.classList.add('hidden');
     showToast(`🎉 收服成功！\n${current.name}加入队伍`);
     message.textContent=`成功收服${current.name}！${first?'已解锁一打一！':'队伍更强了！'}`;
-    running=false; startBtn.textContent=team.length<3?'继续捕捉':'队伍已满'; startBtn.disabled=team.length>=3;
+    running=false; startBtn.textContent='继续捕捉'; startBtn.disabled=false;
   }
   function renderAvailable(){ el('starter-list').innerHTML=POKEMON.map(p=>`<div class="starter"><span class="icon">${p.icon}</span><div><b>${p.name} Lv.${p.level}</b><small>能力：${p.ability}</small></div></div>`).join(''); }
   function renderTeam(){
@@ -162,16 +195,29 @@
     el('team').innerHTML=members.length?members.map(p=>`<div class="member"><span>${p.icon}</span><div><b>${p.name} Lv.${p.level}</b><small>能力：${p.ability}</small></div></div>`).join(''):'<div class="empty">还没有宝可梦<br>先去捕捉第一只吧！</div>';
     document.querySelectorAll('.mode').forEach(btn=>btn.disabled=team.length<Number(btn.dataset.mode));
     const labels=['捕捉第一只宝可梦','已解锁：一打一','已解锁：一打一、二打二','已解锁：一打一、二打二、三打三'];
-    el('mode-status').textContent=(team.length?'✅ ':'任务：')+labels[team.length];
+    el('mode-status').textContent=(team.length?'✅ ':'任务：')+labels[Math.min(team.length,3)];
+  }
+  function renderBalls(){
+    if(balls[selectedBall]<=0){ selectedBall=Object.keys(BALLS).find(id=>balls[id]>0)||selectedBall; }
+    document.querySelectorAll('.ball-choice').forEach(btn=>{
+      const id=btn.dataset.ball;
+      btn.querySelector('.ball-qty').textContent=balls[id];
+      btn.classList.toggle('selected',id===selectedBall);
+      btn.disabled=balls[id]<=0;
+    });
+    throwBtn.textContent=`投掷${BALLS[selectedBall].name}`;
   }
   function showToast(text){ const t=el('toast'); t.innerText=text; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600); }
   startBtn.addEventListener('click',start); throwBtn.addEventListener('click',throwBall);
+  document.querySelectorAll('.ball-choice').forEach(btn=>btn.addEventListener('click',()=>{ selectedBall=btn.dataset.ball; renderBalls(); }));
   document.querySelectorAll('.mode').forEach(btn=>btn.addEventListener('click',()=>showToast(`⚔️ ${btn.textContent}战斗将在下一版开放！`)));
-  renderAvailable(); renderTeam();
+  renderAvailable(); renderTeam(); renderBalls();
 
   window.__pokemonGameTest={
     getAvailablePokemon:()=>POKEMON.map(p=>p.name),
     getCenterHoldMs:()=>CENTER_HOLD_MS,
+    getCatchRate:id=>BALLS[id].rate,
+    getBallInventory:()=>({...balls}),
     forceCenter:()=>{ if(!current) showPokemon(POKEMON[0]); running=true; moveTo(POSITIONS.find(p=>p.center),true); },
     forceCatch:()=>{ forcedCatch=true; throwBall(); }
   };
