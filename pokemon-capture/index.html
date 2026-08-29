@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Leo 宝可梦训练家冒险 v0.1</title>
+  <style>
+    :root { --blue:#178bff; --yellow:#ffd43b; --red:#f04444; --ink:#17314c; }
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { min-height:100vh; min-height:100dvh; font-family:"PingFang SC","Microsoft YaHei",sans-serif; color:var(--ink); background:linear-gradient(#83d9ff 0 42%,#b9ed85 42% 100%); overflow-x:hidden; user-select:none; }
+    body::before { content:""; position:fixed; inset:0; pointer-events:none; background:radial-gradient(circle at 15% 18%,#fff 0 3%,transparent 3.3%),radial-gradient(circle at 80% 12%,#fff 0 4%,transparent 4.3%); opacity:.75; }
+    .app { width:min(980px,100%); margin:auto; padding:12px; position:relative; }
+    header { display:flex; align-items:center; justify-content:space-between; gap:10px; background:rgba(255,255,255,.9); border:3px solid #fff; border-radius:20px; padding:10px 14px; box-shadow:0 7px 0 rgba(31,104,132,.22); }
+    h1 { font-size:clamp(20px,4vw,34px); color:#1168bd; text-shadow:2px 2px #fff; }
+    .version { font-size:12px; background:#e8f5ff; padding:5px 9px; border-radius:99px; }
+    .hud { display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end; }
+    .chip { background:#fff7ce; border:2px solid #ffcf33; border-radius:99px; padding:7px 11px; font-weight:800; white-space:nowrap; }
+    main { display:grid; grid-template-columns:minmax(0,2fr) minmax(245px,1fr); gap:12px; margin-top:14px; }
+    .arena,.panel { background:rgba(255,255,255,.88); border:3px solid white; border-radius:24px; box-shadow:0 8px 0 rgba(46,112,93,.2); }
+    .arena { position:relative; min-height:520px; overflow:hidden; background:linear-gradient(#7dd4ff 0 57%,#75cf62 57% 100%); }
+    .arena::after { content:""; position:absolute; left:50%; top:57%; width:150px; height:46px; transform:translate(-50%,-50%); border-radius:50%; border:5px dashed rgba(255,255,255,.8); background:rgba(255,255,255,.15); box-shadow:0 0 28px rgba(255,255,255,.7); }
+    .mountains { position:absolute; inset:29% 0 auto; height:29%; background:linear-gradient(135deg,transparent 20%,#5ca56a 20% 39%,transparent 39%),linear-gradient(45deg,transparent 58%,#3f8e57 58% 78%,transparent 78%); opacity:.75; }
+    .trainer { position:absolute; left:8%; bottom:8%; width:100px; text-align:center; z-index:3; }
+    .ash { width:62px; height:104px; margin:auto; position:relative; filter:drop-shadow(0 5px 2px rgba(0,0,0,.2)); }
+    .ash .head { position:absolute; left:17px; top:14px; width:35px; height:34px; border-radius:50%; background:#f2bd8d; }
+    .ash .hair { position:absolute; left:12px; top:18px; width:46px; height:23px; background:#26333a; clip-path:polygon(0 0,27% 10%,37% 0,52% 17%,68% 0,75% 20%,100% 13%,83% 70%,12% 75%); }
+    .ash .cap { position:absolute; left:9px; top:4px; width:50px; height:22px; border-radius:30px 30px 7px 7px; background:linear-gradient(90deg,#ef3333 0 27%,#fff 27% 74%,#ef3333 74%); border:2px solid #ad2525; z-index:2; }
+    .ash .cap::after { content:""; position:absolute; width:27px; height:7px; background:#ef3333; right:-14px; bottom:-4px; border-radius:50%; transform:rotate(8deg); }
+    .ash .body { position:absolute; left:15px; top:46px; width:40px; height:40px; border-radius:8px; background:linear-gradient(90deg,#1378c8 0 28%,#fff 28% 47%,#1378c8 47%); }
+    .ash .legs { position:absolute; left:20px; top:83px; width:32px; height:21px; border-left:10px solid #263f6d; border-right:10px solid #263f6d; }
+    .trainer b { display:block; background:white; border-radius:99px; padding:3px; }
+    #pokemon { position:absolute; z-index:4; width:112px; text-align:center; transition:left .55s cubic-bezier(.2,.8,.2,1),top .55s cubic-bezier(.2,.8,.2,1),transform .2s; }
+    #pokemon.moving { transform:scale(.82) rotate(-7deg); }
+    #pokemon.centered { filter:drop-shadow(0 0 18px #fff) drop-shadow(0 0 10px #ffea00); }
+    .poke-sprite { font-size:70px; line-height:1; animation:bob .8s ease-in-out infinite alternate; }
+    @keyframes bob { to { transform:translateY(-7px); } }
+    .poke-label { display:inline-block; padding:5px 9px; margin-top:4px; color:white; background:rgba(19,47,70,.82); border-radius:99px; font-weight:800; }
+    .target { position:absolute; left:50%; top:57%; width:92px; height:92px; transform:translate(-50%,-50%); border:4px solid rgba(255,255,255,.85); border-radius:50%; z-index:2; }
+    .target::before,.target::after { content:""; position:absolute; background:rgba(255,255,255,.8); }
+    .target::before { left:50%; top:-13px; width:3px; height:116px; }
+    .target::after { top:50%; left:-13px; height:3px; width:116px; }
+    #center-message { position:absolute; top:15px; left:50%; transform:translateX(-50%); width:90%; text-align:center; padding:10px; border-radius:14px; font-size:clamp(16px,3vw,23px); font-weight:900; background:rgba(255,255,255,.9); z-index:6; }
+    #throw-btn { position:absolute; right:5%; bottom:7%; z-index:8; width:132px; height:74px; border:0; border-radius:50%; color:white; font-size:18px; font-weight:900; background:linear-gradient(#ef4545 0 48%,#252525 48% 56%,#fff 56%); box-shadow:0 7px 0 #a12222,0 0 0 4px white; cursor:pointer; }
+    #throw-btn:disabled { filter:grayscale(1); opacity:.48; box-shadow:0 5px 0 #555; }
+    #throw-btn:not(:disabled):active { transform:translateY(5px); box-shadow:0 2px 0 #a12222,0 0 0 4px white; }
+    .ball { position:absolute; width:35px; height:35px; border-radius:50%; z-index:10; background:linear-gradient(#ef3d3d 0 46%,#222 46% 57%,#fff 57%); border:2px solid #222; pointer-events:none; transition:left .45s,top .45s,transform .45s; }
+    .panel { padding:14px; }
+    .panel h2 { font-size:19px; margin:4px 0 10px; }
+    .starter-list { display:grid; gap:7px; }
+    .starter { display:grid; grid-template-columns:44px 1fr; align-items:center; gap:7px; padding:8px; border-radius:13px; background:#edf8ff; border:2px solid #c9e9ff; }
+    .starter .icon { font-size:32px; }
+    .starter small { display:block; color:#547086; }
+    .team { min-height:70px; display:grid; gap:6px; }
+    .empty { color:#73869a; padding:12px; text-align:center; border:2px dashed #b8c6d4; border-radius:12px; }
+    .member { display:flex; align-items:center; gap:8px; background:#fff7d7; border:2px solid #f5d553; border-radius:12px; padding:7px; }
+    .member span:first-child { font-size:30px; }
+    .modes { display:grid; grid-template-columns:repeat(3,1fr); gap:5px; }
+    .mode { border:0; border-radius:10px; padding:10px 3px; font-weight:900; background:#1d95ef; color:white; }
+    .mode:disabled { color:#8b969f; background:#dbe1e6; }
+    #start-btn { width:100%; border:0; margin-top:12px; border-radius:14px; padding:13px; font-size:18px; font-weight:900; color:white; background:linear-gradient(135deg,#ff9f1c,#ef4141); box-shadow:0 5px 0 #a62d2d; }
+    #toast { position:fixed; left:50%; top:50%; transform:translate(-50%,-50%) scale(.8); z-index:30; padding:18px 25px; border-radius:18px; background:rgba(16,41,62,.94); color:white; font-size:22px; font-weight:900; text-align:center; opacity:0; pointer-events:none; transition:.2s; }
+    #toast.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+    .hidden { display:none!important; }
+    @media(max-width:720px){ main{grid-template-columns:1fr}.arena{min-height:450px}.panel{padding:11px}.starter-list{grid-template-columns:repeat(3,1fr)}.starter{display:block;text-align:center}.starter small{font-size:10px}.trainer{left:2%;transform:scale(.83)} #throw-btn{width:112px;height:64px;font-size:16px} }
+    @media(max-width:520px){ header{flex-direction:column;align-items:stretch} header h1{font-size:25px;line-height:1.15} .version{display:inline-block;margin-top:6px;white-space:nowrap;font-size:11px}.hud{justify-content:space-between}.chip{flex:1;text-align:center;padding:7px 5px} }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div><h1>⚡ Leo 宝可梦训练家冒险</h1><span class="version">试玩版 v0.1 · 中央2秒捕捉</span></div>
+    <div class="hud"><span class="chip">⚪ 精灵球 <b id="ball-count">∞</b></span><span class="chip">👥 队伍 <b id="team-count">0</b>/3</span></div>
+  </header>
+  <main>
+    <section class="arena" aria-label="捕捉区域">
+      <div class="mountains"></div><div class="target"></div>
+      <div id="center-message">准备好后，开始寻找宝可梦！</div>
+      <div class="trainer"><div class="ash"><i class="cap"></i><i class="hair"></i><i class="head"></i><i class="body"></i><i class="legs"></i></div><b>小智 Lv.1</b></div>
+      <div id="pokemon" class="hidden"><div class="poke-sprite">⚡</div><div class="poke-label">皮卡丘 Lv.1</div></div>
+      <button id="throw-btn" aria-label="投掷精灵球" disabled>投掷精灵球</button>
+    </section>
+    <aside class="panel">
+      <h2>🌿 本区可能出现</h2>
+      <div class="starter-list" id="starter-list"></div>
+      <h2>🎒 小智的队伍</h2>
+      <div class="team" id="team"><div class="empty">还没有宝可梦<br>先去捕捉第一只吧！</div></div>
+      <h2>🏆 已解锁比赛</h2>
+      <div class="modes"><button class="mode" data-mode="1" disabled>一打一</button><button class="mode" data-mode="2" disabled>二打二</button><button class="mode" data-mode="3" disabled>三打三</button></div>
+      <button id="start-btn">开始捕捉</button>
+      <p id="mode-status" style="margin-top:10px;text-align:center;font-weight:800;color:#497086">任务：捕捉第一只宝可梦</p>
+    </aside>
+  </main>
+</div>
+<div id="toast"></div>
+<script>
+(() => {
+  'use strict';
+  const CENTER_HOLD_MS = 2000;
+  const POKEMON = [
+    {id:'pikachu',name:'皮卡丘',icon:'⚡',level:1,ability:'静电麻痹',color:'#ffe34d'},
+    {id:'charmander',name:'小火龙',icon:'🔥',level:1,ability:'猛火增强',color:'#ff9a43'},
+    {id:'squirtle',name:'杰尼龟',icon:'💧',level:1,ability:'龟壳防御',color:'#62c8ef'}
+  ];
+  const POSITIONS = [
+    {x:12,y:25,center:false},{x:70,y:20,center:false},{x:73,y:66,center:false},
+    {x:45,y:48,center:true},{x:20,y:65,center:false},{x:48,y:18,center:false}
+  ];
+  const el = id => document.getElementById(id);
+  const pokemonEl=el('pokemon'), throwBtn=el('throw-btn'), startBtn=el('start-btn'), message=el('center-message');
+  let team = loadTeam(), running=false, centered=false, moveTimer=null, centerTimer=null, current=null, posIndex=0, forcedCatch=false;
+
+  function loadTeam(){ try { return JSON.parse(localStorage.getItem('leo-pokemon-team')||'[]').filter(id=>POKEMON.some(p=>p.id===id)).slice(0,3); } catch { return []; } }
+  function saveTeam(){ try { localStorage.setItem('leo-pokemon-team',JSON.stringify(team)); } catch {} }
+  function randomPokemon(){ const available=POKEMON.filter(p=>!team.includes(p.id)); const pool=available.length?available:POKEMON; return pool[Math.floor(Math.random()*pool.length)]; }
+  function showPokemon(p){ current=p; pokemonEl.querySelector('.poke-sprite').textContent=p.icon; pokemonEl.querySelector('.poke-label').textContent=`${p.name} Lv.${p.level}`; pokemonEl.classList.remove('hidden'); }
+  function moveTo(position,instant=false){
+    clearTimeout(moveTimer); clearTimeout(centerTimer); centered=false; throwBtn.disabled=true;
+    pokemonEl.classList.toggle('moving',!instant); pokemonEl.classList.remove('centered');
+    pokemonEl.style.left=position.x+'%'; pokemonEl.style.top=position.y+'%';
+    if(position.center){
+      centered=true; pokemonEl.classList.add('centered'); pokemonEl.classList.remove('moving');
+      message.textContent=`✨ ${current.name}来到中间！现在投掷！只有2秒！`;
+      throwBtn.disabled=false;
+      centerTimer=setTimeout(()=>{ if(running&&centered){ centered=false; throwBtn.disabled=true; message.textContent='错过啦！继续观察它的位置'; nextMove(); } },CENTER_HOLD_MS);
+    } else {
+      message.textContent=`👀 跟住${current.name}，等它来到正中间！`;
+      moveTimer=setTimeout(nextMove,1100);
+    }
+  }
+  function nextMove(){
+    if(!running) return;
+    posIndex=(posIndex+1)%POSITIONS.length;
+    if(posIndex===0 || Math.random()<.18) showPokemon(randomPokemon());
+    moveTo(POSITIONS[posIndex]);
+  }
+  function start(){
+    running=true; startBtn.textContent='换一个目标'; showPokemon(randomPokemon()); posIndex=Math.floor(Math.random()*3); moveTo(POSITIONS[posIndex],true);
+  }
+  function throwBall(){
+    if(!centered||!running) return;
+    centered=false; throwBtn.disabled=true; clearTimeout(centerTimer);
+    const ball=document.createElement('div'); ball.className='ball'; ball.style.left='82%'; ball.style.top='78%'; document.querySelector('.arena').appendChild(ball);
+    requestAnimationFrame(()=>{ ball.style.left='49%'; ball.style.top='54%'; ball.style.transform='rotate(540deg) scale(.75)'; });
+    setTimeout(()=>{
+      const success=forcedCatch || team.length===0 || Math.random()<.82; forcedCatch=false;
+      ball.remove();
+      if(success){ catchCurrent(); } else { showToast('挣脱了！再试一次！'); message.textContent=`💨 ${current.name}挣脱了精灵球！`; setTimeout(nextMove,900); }
+    },500);
+  }
+  function catchCurrent(){
+    const first=!team.length;
+    if(!team.includes(current.id) && team.length<3) team.push(current.id);
+    saveTeam(); renderTeam(); pokemonEl.classList.add('hidden');
+    showToast(`🎉 收服成功！\n${current.name}加入队伍`);
+    message.textContent=`成功收服${current.name}！${first?'已解锁一打一！':'队伍更强了！'}`;
+    running=false; startBtn.textContent=team.length<3?'继续捕捉':'队伍已满'; startBtn.disabled=team.length>=3;
+  }
+  function renderAvailable(){ el('starter-list').innerHTML=POKEMON.map(p=>`<div class="starter"><span class="icon">${p.icon}</span><div><b>${p.name} Lv.${p.level}</b><small>能力：${p.ability}</small></div></div>`).join(''); }
+  function renderTeam(){
+    el('team-count').textContent=team.length;
+    const members=team.map(id=>POKEMON.find(p=>p.id===id));
+    el('team').innerHTML=members.length?members.map(p=>`<div class="member"><span>${p.icon}</span><div><b>${p.name} Lv.${p.level}</b><small>能力：${p.ability}</small></div></div>`).join(''):'<div class="empty">还没有宝可梦<br>先去捕捉第一只吧！</div>';
+    document.querySelectorAll('.mode').forEach(btn=>btn.disabled=team.length<Number(btn.dataset.mode));
+    const labels=['捕捉第一只宝可梦','已解锁：一打一','已解锁：一打一、二打二','已解锁：一打一、二打二、三打三'];
+    el('mode-status').textContent=(team.length?'✅ ':'任务：')+labels[team.length];
+  }
+  function showToast(text){ const t=el('toast'); t.innerText=text; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),1600); }
+  startBtn.addEventListener('click',start); throwBtn.addEventListener('click',throwBall);
+  document.querySelectorAll('.mode').forEach(btn=>btn.addEventListener('click',()=>showToast(`⚔️ ${btn.textContent}战斗将在下一版开放！`)));
+  renderAvailable(); renderTeam();
+
+  window.__pokemonGameTest={
+    getAvailablePokemon:()=>POKEMON.map(p=>p.name),
+    getCenterHoldMs:()=>CENTER_HOLD_MS,
+    forceCenter:()=>{ if(!current) showPokemon(POKEMON[0]); running=true; moveTo(POSITIONS.find(p=>p.center),true); },
+    forceCatch:()=>{ forcedCatch=true; throwBall(); }
+  };
+})();
+</script>
+</body>
+</html>
